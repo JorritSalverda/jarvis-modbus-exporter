@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	contractsv1 "github.com/JorritSalverda/jarvis-contracts-golang/contracts/v1"
+	contractsv1 "github.com/JorritSalverda/jarvis-modbus-exporter/contracts/v1"
 	"github.com/stretchr/testify/assert"
 )
 
