@@ -1,7 +1,7 @@
 location: My Home
 sampleConfigs:
-- name: Sunny TriPower 8.0
-  displayName: Totaal opgewekt
+- deviceName: Sunny TriPower 8.0
+  sampleName: Totaal opgewekt
   aggregationLevel: 3
   metricType: 1
   sampleType: 1

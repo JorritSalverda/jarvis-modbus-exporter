@@ -101,8 +101,8 @@ func (c *client) GetSample(config apiv1.Config, sampleConfig apiv1.ConfigSample,
 
 	// init sample from config
 	sample = contractsv1.Sample{
-		Name:             sampleConfig.Name,
-		DisplayName:      sampleConfig.DisplayName,
+		DeviceName:       sampleConfig.DeviceName,
+		SampleName:       sampleConfig.SampleName,
 		AggregationLevel: sampleConfig.AggregationLevel,
 		MetricType:       sampleConfig.MetricType,
 		SampleType:       sampleConfig.SampleType,

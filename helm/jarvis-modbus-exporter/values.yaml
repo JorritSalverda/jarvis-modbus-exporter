@@ -17,8 +17,8 @@ config:
   configYaml: |
     location: My Home
     sampleConfigs:
-    - name: Sunny TriPower 8.0
-      displayName: Totaal opgewekt
+    - deviceName: Sunny TriPower 8.0
+      sampleName: Totaal opgewekt
       aggregationLevel: AGGREGATION_LEVEL_DEVICE
       metricType: METRIC_TYPE_COUNTER
       sampleType: SampleType_SAMPLE_TYPE_ELECTRICITY

@@ -11,8 +11,8 @@ type Config struct {
 
 type ConfigSample struct {
 	// default jarvis config for sample
-	Name             string                       `yaml:"name"`
-	DisplayName      string                       `yaml:"displayName"`
+	DeviceName       string                       `yaml:"deviceName"`
+	SampleName       string                       `yaml:"sampleName"`
 	AggregationLevel contractsv1.AggregationLevel `yaml:"aggregationLevel"`
 	MetricType       contractsv1.MetricType       `yaml:"metricType"`
 	SampleType       contractsv1.SampleType       `yaml:"sampleType"`
