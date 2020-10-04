@@ -45,7 +45,7 @@ func (c *client) GetMeasurement(config apiv1.Config) (measurement contractsv1.Me
 	// Modbus TCP
 	handler := modbus.NewTCPClientHandler(fmt.Sprintf("%v:%v", c.host, c.port))
 	handler.Timeout = 20 * time.Second
-	handler.SlaveId = 0x3
+	handler.SlaveId = byte(c.unitID)
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	// Connect manually so that multiple requests are handled in one connection session
 	err = handler.Connect()
