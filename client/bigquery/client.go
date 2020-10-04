@@ -187,7 +187,7 @@ func (c *client) InitBigqueryTable(dataset, table string) (err error) {
 
 	if !tableExist {
 		log.Debug().Msgf("Creating table %v.%v.%v...", c.projectID, dataset, table)
-		err := c.CreateTable(dataset, table, contractsv1.Measurement{}, "measuredAtTime", true)
+		err := c.CreateTable(dataset, table, contractsv1.Measurement{}, "MeasuredAtTime", true)
 		if err != nil {
 			return fmt.Errorf("Failed creating bigquery table: %w", err)
 		}
