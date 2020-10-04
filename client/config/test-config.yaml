@@ -2,10 +2,10 @@ location: My Home
 sampleConfigs:
 - deviceName: Sunny TriPower 8.0
   sampleName: Totaal opgewekt
-  aggregationLevel: 3
-  metricType: 1
-  sampleType: 1
-  sampleUnit: 1
+  aggregationLevel: AGGREGATION_LEVEL_DEVICE
+  metricType: METRIC_TYPE_COUNTER
+  sampleType: SAMPLE_TYPE_ELECTRICITY
+  sampleUnit: SAMPLE_UNIT_JOULE
   valueMultiplier: 3600
   registerType: input
   registerAddress: 30513
