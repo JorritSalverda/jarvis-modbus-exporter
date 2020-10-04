@@ -1,0 +1,13 @@
+location: My Home
+deviceName: Sunny TriPower 8.0
+sampleConfigs:
+- name: Sunny TriPower 8.0
+  displayName: Totaal opgewekt
+  aggregationLevel: 3
+  metricType: 1
+  sampleType: 1
+  sampleUnit: 2
+  valueMultiplier: 3600
+  registerType: input
+  registerAddress: 30513
+  registerQuantity: 4

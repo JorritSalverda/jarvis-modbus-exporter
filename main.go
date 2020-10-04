@@ -1,16 +1,15 @@
 package main
 
 import (
-	"io/ioutil"
+	"context"
 	"runtime"
 
-	apiv1 "github.com/JorritSalverda/jarvis-modbus-exporter/api/v1"
 	bigquery "github.com/JorritSalverda/jarvis-modbus-exporter/client/bigquery"
+	config "github.com/JorritSalverda/jarvis-modbus-exporter/client/config"
 	modbus "github.com/JorritSalverda/jarvis-modbus-exporter/client/modbus"
 	"github.com/alecthomas/kingpin"
 	foundation "github.com/estafette/estafette-foundation"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -46,8 +45,16 @@ func main() {
 	// init log format from envvar ESTAFETTE_LOG_FORMAT
 	foundation.InitLoggingFromEnv(foundation.NewApplicationInfo(appgroup, app, version, branch, revision, buildDate))
 
+	// create context to cancel commands on sigterm
+	ctx := foundation.InitCancellationContext(context.Background())
+
+	configClient, err := config.NewClient(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed creating config.Client")
+	}
+
 	// read config from yaml file
-	config, err := readConfigFromFile(*configPath)
+	config, err := configClient.ReadConfigFromFile(*configPath)
 	if err != nil {
 		log.Fatal().Err(err).Msgf("Failed loading config from %v", *configPath)
 	}
@@ -57,7 +64,7 @@ func main() {
 	// init bigquery client
 	bigqueryClient, err := bigquery.NewClient(*bigqueryProjectID, *bigqueryEnable)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed creating bigquery client")
+		log.Fatal().Err(err).Msg("Failed creating bigquery.Client")
 	}
 
 	// init bigquery table if it doesn't exist yet
@@ -160,18 +167,3 @@ func main() {
 
 // 	return string(namespace)
 // }
-
-func readConfigFromFile(configFilePath string) (config apiv1.Config, err error) {
-	log.Debug().Msgf("Reading %v file...", configFilePath)
-
-	data, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		return config, err
-	}
-
-	if err := yaml.UnmarshalStrict(data, &config); err != nil {
-		return config, err
-	}
-
-	return
-}
