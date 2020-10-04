@@ -14,8 +14,6 @@ config:
   bqProjectID: gcp-project-id
   bqDataset: jarvis
   bqTable: jarvis-measurements
-
-  // https://files.sma.de/downloads/MODBUS-HTML_STP8.0-10.0-3AV-40_GG10_V10.zip
   configYaml: |
     location: My Home
     sampleConfigs:
