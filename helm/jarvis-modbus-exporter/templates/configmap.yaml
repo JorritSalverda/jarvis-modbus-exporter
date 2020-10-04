@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "jarvis-modbus-exporter.fullname" . }}
+  labels:
+    {{- include "jarvis-modbus-exporter.labels" . | nindent 4 }}
+data:
+  modbus-host-ip: {{ .Values.config.modbusHostIP | quote }}
+  modbus-host-port: {{ .Values.config.modbusHostPort | quote }}
+  modbus-unit-id: {{ .Values.config.modbusUnitID | quote }}
+  bq-enable: {{ .Values.config.bqEnable | quote }}
+  bq-project-id: {{ .Values.config.bqProjectID | quote }}
+  bq-dataset: {{ .Values.config.bqDataset | quote }}
+  bq-table: {{ .Values.config.bqTable | quote }}
+  config.yaml: |
+    {{- with .Values.config.configYaml }}
+    {{- tpl . $ | nindent 4 }}
+    {{- end }}  
