@@ -6,7 +6,6 @@ import (
 
 type Config struct {
 	Location      string         `yaml:"location"`
-	DeviceName    string         `yaml:"deviceName"`
 	SampleConfigs []ConfigSample `yaml:"sampleConfigs"`
 }
 

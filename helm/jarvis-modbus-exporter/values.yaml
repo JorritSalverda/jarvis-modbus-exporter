@@ -14,18 +14,17 @@ config:
   bqProjectID: gcp-project-id
   bqDataset: jarvis
   bqTable: jarvis-measurements
+
+  // https://files.sma.de/downloads/MODBUS-HTML_STP8.0-10.0-3AV-40_GG10_V10.zip
   configYaml: |
     location: My Home
-    deviceName: Sunny TriPower 8.0
     sampleConfigs:
-    // https://files.sma.de/downloads/MODBUS-HTML_STP8.0-10.0-3AV-40_GG10_V10.zip
-    - name: ""
-      displayName: "Totaal opgewekt"
+    - name: Sunny TriPower 8.0
+      displayName: Totaal opgewekt
       aggregationLevel: AGGREGATION_LEVEL_DEVICE
       metricType: METRIC_TYPE_COUNTER
       sampleType: SampleType_SAMPLE_TYPE_ELECTRICITY
       sampleUnit: SAMPLE_UNIT_WATT_SECOND
-
       valueMultiplier: 3600
       registerType: input
       registerAddress: 30513

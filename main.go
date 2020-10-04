@@ -68,7 +68,10 @@ func main() {
 	}
 
 	// init bigquery table if it doesn't exist yet
-	bigqueryClient.InitBigqueryTable(*bigqueryDataset, *bigqueryTable)
+	err = bigqueryClient.InitBigqueryTable(*bigqueryDataset, *bigqueryTable)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed initializing bigquery table")
+	}
 
 	// // create kubernetes api client
 	// kubeClientConfig, err := rest.InClusterConfig()
