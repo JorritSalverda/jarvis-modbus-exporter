@@ -5,7 +5,7 @@ sampleConfigs:
   aggregationLevel: 3
   metricType: 1
   sampleType: 1
-  sampleUnit: 2
+  sampleUnit: 1
   valueMultiplier: 3600
   registerType: input
   registerAddress: 30513
