@@ -8,6 +8,7 @@ require (
 	github.com/estafette/estafette-foundation v0.0.66
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/rs/zerolog v1.20.0
 	github.com/stretchr/testify v1.4.0
 	gopkg.in/yaml.v2 v2.3.0

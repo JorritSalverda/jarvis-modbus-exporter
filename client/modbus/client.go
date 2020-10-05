@@ -10,6 +10,7 @@ import (
 	apiv1 "github.com/JorritSalverda/jarvis-modbus-exporter/api/v1"
 	contractsv1 "github.com/JorritSalverda/jarvis-modbus-exporter/contracts/v1"
 	"github.com/goburrow/modbus"
+	"github.com/google/uuid"
 )
 
 // Client is the interface for connecting to a modbus device via ethernet
@@ -56,6 +57,7 @@ func (c *client) GetMeasurement(config apiv1.Config) (measurement contractsv1.Me
 	client := modbus.NewClient(handler)
 
 	measurement = contractsv1.Measurement{
+		ID:             uuid.New(),
 		Source:         "jarvis-modbus-exporter",
 		Location:       config.Location,
 		Samples:        []*contractsv1.Sample{},

@@ -1,8 +1,13 @@
 package contracts
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Measurement struct {
+	ID             uuid.UUID
 	Source         string
 	Location       string
 	Samples        []*Sample
