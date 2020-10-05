@@ -57,7 +57,7 @@ func (c *client) GetMeasurement(config apiv1.Config) (measurement contractsv1.Me
 	client := modbus.NewClient(handler)
 
 	measurement = contractsv1.Measurement{
-		ID:             uuid.New(),
+		ID:             uuid.New().String(),
 		Source:         "jarvis-modbus-exporter",
 		Location:       config.Location,
 		Samples:        []*contractsv1.Sample{},

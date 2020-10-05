@@ -2,12 +2,10 @@ package contracts
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Measurement struct {
-	ID             uuid.UUID
+	ID             string
 	Source         string
 	Location       string
 	Samples        []*Sample
