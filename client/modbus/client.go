@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
+	contractsv1 "github.com/JorritSalverda/jarvis-contracts-golang/contracts/v1"
 	apiv1 "github.com/JorritSalverda/jarvis-modbus-exporter/api/v1"
-	contractsv1 "github.com/JorritSalverda/jarvis-modbus-exporter/contracts/v1"
 	"github.com/goburrow/modbus"
 	"github.com/google/uuid"
 )

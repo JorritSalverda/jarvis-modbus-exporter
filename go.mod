@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go/bigquery v1.11.2
+	github.com/JorritSalverda/jarvis-contracts-golang v0.1.2-hand-crafted
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/estafette/estafette-foundation v0.0.66
 	github.com/goburrow/modbus v0.1.0

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	googlebigquery "cloud.google.com/go/bigquery"
-	contractsv1 "github.com/JorritSalverda/jarvis-modbus-exporter/contracts/v1"
+	contractsv1 "github.com/JorritSalverda/jarvis-contracts-golang/contracts/v1"
 	"github.com/rs/zerolog/log"
 )
 

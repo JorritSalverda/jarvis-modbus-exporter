@@ -1,7 +1,7 @@
 package api
 
 import (
-	contractsv1 "github.com/JorritSalverda/jarvis-modbus-exporter/contracts/v1"
+	contractsv1 "github.com/JorritSalverda/jarvis-contracts-golang/contracts/v1"
 )
 
 type Config struct {
