@@ -13,16 +13,15 @@ config:
   bqEnable: false
   bqProjectID: gcp-project-id
   bqDataset: jarvis
-  bqTable: jarvis-measurements
+  bqTable: jarvis_measurements
   configYaml: |
     location: My Home
     sampleConfigs:
-    - deviceName: Sunny TriPower 8.0
+    - entityType: ENTITY_TYPE_DEVICE
+      entityName: Sunny TriPower 8.0
+      sampleType: SAMPLE_TYPE_ELECTRICITY_PRODUCTION
       sampleName: Totaal opgewekt
-      aggregationLevel: AGGREGATION_LEVEL_DEVICE
       metricType: METRIC_TYPE_COUNTER
-      sampleType: SampleType_SAMPLE_TYPE_ELECTRICITY
-      sampleUnit: SAMPLE_UNIT_WATT_SECOND
       valueMultiplier: 3600
       registerType: input
       registerAddress: 30513

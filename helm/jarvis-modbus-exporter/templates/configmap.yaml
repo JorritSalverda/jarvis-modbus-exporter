@@ -15,4 +15,4 @@ data:
   config.yaml: |
     {{- with .Values.config.configYaml }}
     {{- tpl . $ | nindent 4 }}
-    {{- end }}  
+    {{- end }}
