@@ -10,7 +10,7 @@ import (
 )
 
 type Client interface {
-	ReadConfigFromFile(path string) (config apiv1.Config, err error)
+	ReadConfigFromFile(ctx context.Context, path string) (config apiv1.Config, err error)
 }
 
 func NewClient(ctx context.Context) (Client, error) {
@@ -20,7 +20,7 @@ func NewClient(ctx context.Context) (Client, error) {
 type client struct {
 }
 
-func (c *client) ReadConfigFromFile(path string) (config apiv1.Config, err error) {
+func (c *client) ReadConfigFromFile(ctx context.Context, path string) (config apiv1.Config, err error) {
 	log.Debug().Msgf("Reading %v file...", path)
 
 	data, err := ioutil.ReadFile(path)

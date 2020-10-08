@@ -16,7 +16,7 @@ func TestReadConfigFromFile(t *testing.T) {
 		client, _ := NewClient(ctx)
 
 		// act
-		config, err := client.ReadConfigFromFile("./test-config.yaml")
+		config, err := client.ReadConfigFromFile(ctx, "./test-config.yaml")
 
 		assert.Nil(t, err)
 		assert.Equal(t, "My Home", config.Location)

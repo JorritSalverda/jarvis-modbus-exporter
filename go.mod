@@ -13,4 +13,6 @@ require (
 	github.com/rs/zerolog v1.20.0
 	github.com/stretchr/testify v1.4.0
 	gopkg.in/yaml.v2 v2.3.0
+	k8s.io/apimachinery v0.19.2
+	k8s.io/client-go v0.19.2
 )
