@@ -4,10 +4,6 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/JorritSalverda/jarvis-modbus-exporter/client/bigquery"
-	"github.com/JorritSalverda/jarvis-modbus-exporter/client/config"
-	"github.com/JorritSalverda/jarvis-modbus-exporter/client/modbus"
-	"github.com/JorritSalverda/jarvis-modbus-exporter/client/state"
 	"github.com/alecthomas/kingpin"
 	foundation "github.com/estafette/estafette-foundation"
 	"github.com/rs/zerolog/log"
@@ -52,73 +48,46 @@ func main() {
 	// create context to cancel commands on sigterm
 	ctx := foundation.InitCancellationContext(context.Background())
 
-	configClient, err := config.NewClient(ctx)
+	// bootstrap
+	configClient, err := NewConfigClient()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed creating config.Client")
+		log.Fatal().Err(err).Msg("Failed creating configClient")
 	}
 
-	// read config from yaml file
-	config, err := configClient.ReadConfigFromFile(ctx, *configPath)
+	bigqueryClient, err := NewBigQueryClient(ctx, *bigqueryProjectID, *bigqueryEnable)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed loading config from %v", *configPath)
+		log.Fatal().Err(err).Msg("Failed creating bigqueryClient")
 	}
 
-	log.Info().Interface("config", config).Msgf("Loaded config from %v", *configPath)
-
-	// init bigquery client
-	bigqueryClient, err := bigquery.NewClient(ctx, *bigqueryProjectID, *bigqueryEnable)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed creating bigquery.Client")
-	}
-
-	// init bigquery table if it doesn't exist yet
-	if *bigqueryInit {
-		err = bigqueryClient.InitBigqueryTable(ctx, *bigqueryDataset, *bigqueryTable)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed initializing bigquery table")
-		}
-	}
-
-	// create kubernetes api client
 	kubeClientConfig, err := rest.InClusterConfig()
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Failed creating kubeClientConfig")
 	}
-	// creates the clientset
+
 	kubeClientset, err := kubernetes.NewForConfig(kubeClientConfig)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Failed creating kubeClienset")
 	}
 
-	stateClient, err := state.NewClient(ctx, kubeClientset, *measurementFilePath, *measurementFileConfigMapName)
+	stateClient, err := NewStateClient(kubeClientset, *measurementFilePath, *measurementFileConfigMapName)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed creating state client")
+		log.Fatal().Err(err).Msg("Failed creating stateClient")
 	}
 
-	modbusClient, err := modbus.NewClient(ctx, *modbusHostIPAddress, *modbusHostPort, *modbusUnitID)
+	modbusClient, err := NewModbusClient(*modbusHostIPAddress, *modbusHostPort, *modbusUnitID)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed creating modbus client")
+		log.Fatal().Err(err).Msg("Failed creating modbusClient")
 	}
 
-	lastMeasurement, err := stateClient.ReadState(ctx)
+	exporterService, err := NewExporterService(configClient, bigqueryClient, stateClient, modbusClient)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed reading last state")
+		log.Fatal().Err(err).Msg("Failed creating exporterService")
 	}
 
-	measurement, err := modbusClient.GetMeasurement(ctx, config, lastMeasurement)
+	// run exporter
+	err = exporterService.Run(ctx, *bigqueryInit, *bigqueryDataset, *bigqueryTable)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed getting measurement")
+		log.Fatal().Err(err).Msg("Failed running exporter")
 	}
 
-	err = bigqueryClient.InsertMeasurement(ctx, *bigqueryDataset, *bigqueryTable, measurement)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed inserting measurements into bigquery table")
-	}
-
-	err = stateClient.StoreState(ctx, measurement)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed storing measurements in state file")
-	}
-
-	log.Info().Msgf("Stored %v samples, exiting...", len(measurement.Samples))
 }

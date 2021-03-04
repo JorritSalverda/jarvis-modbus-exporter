@@ -1,4 +1,4 @@
-package modbus
+package main
 
 import (
 	"context"
@@ -7,20 +7,20 @@ import (
 	"time"
 
 	contractsv1 "github.com/JorritSalverda/jarvis-contracts-golang/contracts/v1"
-	apiv1 "github.com/JorritSalverda/jarvis-modbus-exporter/api/v1"
 	"github.com/goburrow/modbus"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
-// Client is the interface for connecting to a modbus device via ethernet
-type Client interface {
-	GetMeasurement(ctx context.Context, config apiv1.Config, lastMeasurement *contractsv1.Measurement) (measurement contractsv1.Measurement, err error)
-	GetSample(ctx context.Context, config apiv1.Config, sampleConfig apiv1.ConfigSample, modbusClient modbus.Client) (sample contractsv1.Sample, err error)
+// ModbusClient is the interface for connecting to a modbus device via ethernet
+//go:generate mockgen -package=main -destination ./modbus_client_mock.go -source=modbus_client.go
+type ModbusClient interface {
+	GetMeasurement(ctx context.Context, config Config, lastMeasurement *contractsv1.Measurement) (measurement contractsv1.Measurement, err error)
+	GetSample(ctx context.Context, config Config, sampleConfig ConfigSample, modbusClient modbus.Client) (sample contractsv1.Sample, err error)
 }
 
-// NewClient returns new modbus.Client
-func NewClient(ctx context.Context, host string, port int, unitID int) (Client, error) {
+// NewModbusClient returns new ModbusClient
+func NewModbusClient(host string, port int, unitID int) (ModbusClient, error) {
 	if host == "" {
 		return nil, fmt.Errorf("Please set the ip address of your modbus device on your local network")
 	}
@@ -28,20 +28,20 @@ func NewClient(ctx context.Context, host string, port int, unitID int) (Client, 
 		return nil, fmt.Errorf("Please set the modbus port of your modbus device on your local network to its default 502, or anywhere between 49152 and 65535 if changed in the installer menu")
 	}
 
-	return &client{
+	return &modbusClient{
 		host:   host,
 		port:   port,
 		unitID: unitID,
 	}, nil
 }
 
-type client struct {
+type modbusClient struct {
 	host   string
 	port   int
 	unitID int
 }
 
-func (c *client) GetMeasurement(ctx context.Context, config apiv1.Config, lastMeasurement *contractsv1.Measurement) (measurement contractsv1.Measurement, err error) {
+func (c *modbusClient) GetMeasurement(ctx context.Context, config Config, lastMeasurement *contractsv1.Measurement) (measurement contractsv1.Measurement, err error) {
 
 	// Modbus TCP
 	handler := modbus.NewTCPClientHandler(fmt.Sprintf("%v:%v", c.host, c.port))
@@ -78,27 +78,27 @@ func (c *client) GetMeasurement(ctx context.Context, config apiv1.Config, lastMe
 	return
 }
 
-func (c *client) GetSample(ctx context.Context, config apiv1.Config, sampleConfig apiv1.ConfigSample, modbusClient modbus.Client) (sample contractsv1.Sample, err error) {
+func (c *modbusClient) GetSample(ctx context.Context, config Config, sampleConfig ConfigSample, modbusClient modbus.Client) (sample contractsv1.Sample, err error) {
 
 	var sampleBytes []byte
 
 	switch sampleConfig.RegisterType {
-	case apiv1.RegisterTypeInput:
+	case RegisterTypeInput:
 		sampleBytes, err = modbusClient.ReadInputRegisters(sampleConfig.RegisterAddress, sampleConfig.RegisterQuantity)
 		if err != nil {
 			return
 		}
-	case apiv1.RegisterTypeHolding:
+	case RegisterTypeHolding:
 		sampleBytes, err = modbusClient.ReadHoldingRegisters(sampleConfig.RegisterAddress, sampleConfig.RegisterQuantity)
 		if err != nil {
 			return
 		}
-	case apiv1.RegisterTypeDiscrete:
+	case RegisterTypeDiscrete:
 		sampleBytes, err = modbusClient.ReadDiscreteInputs(sampleConfig.RegisterAddress, sampleConfig.RegisterQuantity)
 		if err != nil {
 			return
 		}
-	case apiv1.RegisterTypeCoil:
+	case RegisterTypeCoil:
 		sampleBytes, err = modbusClient.ReadCoils(sampleConfig.RegisterAddress, sampleConfig.RegisterQuantity)
 		if err != nil {
 			return
@@ -123,7 +123,7 @@ func (c *client) GetSample(ctx context.Context, config apiv1.Config, sampleConfi
 	return
 }
 
-func (c *client) sanitizeSamples(currentSamples, lastSamples []*contractsv1.Sample) (sanitizeSamples []*contractsv1.Sample) {
+func (c *modbusClient) sanitizeSamples(currentSamples, lastSamples []*contractsv1.Sample) (sanitizeSamples []*contractsv1.Sample) {
 
 	sanitizeSamples = []*contractsv1.Sample{}
 	for _, cs := range currentSamples {

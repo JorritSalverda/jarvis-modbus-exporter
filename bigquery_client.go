@@ -1,4 +1,4 @@
-package bigquery
+package main
 
 import (
 	"context"
@@ -10,8 +10,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Client is the interface for connecting to bigquery
-type Client interface {
+// BigQueryClient is the interface for connecting to bigquery
+//go:generate mockgen -package=main -destination ./bigquery_client_mock.go -source=bigquery_client.go
+type BigQueryClient interface {
 	CheckIfDatasetExists(ctx context.Context, dataset string) (exists bool)
 	CheckIfTableExists(ctx context.Context, dataset, table string) (exists bool)
 	CreateTable(ctx context.Context, dataset, table string, typeForSchema interface{}, partitionField string, waitReady bool) (err error)
@@ -21,28 +22,28 @@ type Client interface {
 	InitBigqueryTable(ctx context.Context, dataset, table string) (err error)
 }
 
-// NewClient returns new bigquery.Client
-func NewClient(ctx context.Context, projectID string, enable bool) (Client, error) {
+// NewBigQueryClient returns new BigQueryClient
+func NewBigQueryClient(ctx context.Context, projectID string, enable bool) (BigQueryClient, error) {
 
-	bigqueryClient, err := googlebigquery.NewClient(ctx, projectID)
+	internalBigqueryClient, err := googlebigquery.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &client{
+	return &bigqueryClient{
 		projectID: projectID,
-		client:    bigqueryClient,
+		client:    internalBigqueryClient,
 		enable:    enable,
 	}, nil
 }
 
-type client struct {
+type bigqueryClient struct {
 	projectID string
 	client    *googlebigquery.Client
 	enable    bool
 }
 
-func (c *client) CheckIfDatasetExists(ctx context.Context, dataset string) (exists bool) {
+func (c *bigqueryClient) CheckIfDatasetExists(ctx context.Context, dataset string) (exists bool) {
 
 	if !c.enable {
 		return false
@@ -57,7 +58,7 @@ func (c *client) CheckIfDatasetExists(ctx context.Context, dataset string) (exis
 	return md != nil
 }
 
-func (c *client) CheckIfTableExists(ctx context.Context, dataset, table string) (exists bool) {
+func (c *bigqueryClient) CheckIfTableExists(ctx context.Context, dataset, table string) (exists bool) {
 
 	if !c.enable {
 		return false
@@ -72,7 +73,7 @@ func (c *client) CheckIfTableExists(ctx context.Context, dataset, table string) 
 	return md != nil
 }
 
-func (c *client) CreateTable(ctx context.Context, dataset, table string, typeForSchema interface{}, partitionField string, waitReady bool) (err error) {
+func (c *bigqueryClient) CreateTable(ctx context.Context, dataset, table string, typeForSchema interface{}, partitionField string, waitReady bool) (err error) {
 
 	if !c.enable {
 		return nil
@@ -115,7 +116,7 @@ func (c *client) CreateTable(ctx context.Context, dataset, table string, typeFor
 	return nil
 }
 
-func (c *client) UpdateTableSchema(ctx context.Context, dataset, table string, typeForSchema interface{}) (err error) {
+func (c *bigqueryClient) UpdateTableSchema(ctx context.Context, dataset, table string, typeForSchema interface{}) (err error) {
 
 	if !c.enable {
 		return nil
@@ -144,7 +145,7 @@ func (c *client) UpdateTableSchema(ctx context.Context, dataset, table string, t
 	return nil
 }
 
-func (c *client) DeleteTable(ctx context.Context, dataset, table string) (err error) {
+func (c *bigqueryClient) DeleteTable(ctx context.Context, dataset, table string) (err error) {
 
 	if !c.enable {
 		return nil
@@ -161,7 +162,7 @@ func (c *client) DeleteTable(ctx context.Context, dataset, table string) (err er
 	return nil
 }
 
-func (c *client) InsertMeasurement(ctx context.Context, dataset, table string, measurement contractsv1.Measurement) (err error) {
+func (c *bigqueryClient) InsertMeasurement(ctx context.Context, dataset, table string, measurement contractsv1.Measurement) (err error) {
 
 	if !c.enable {
 		return nil
@@ -178,7 +179,7 @@ func (c *client) InsertMeasurement(ctx context.Context, dataset, table string, m
 	return nil
 }
 
-func (c *client) InitBigqueryTable(ctx context.Context, dataset, table string) (err error) {
+func (c *bigqueryClient) InitBigqueryTable(ctx context.Context, dataset, table string) (err error) {
 
 	log.Debug().Msgf("Checking if table %v.%v.%v exists...", c.projectID, dataset, table)
 	tableExist := c.CheckIfTableExists(ctx, dataset, table)

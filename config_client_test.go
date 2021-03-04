@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"context"
@@ -13,7 +13,7 @@ func TestReadConfigFromFile(t *testing.T) {
 	t.Run("ReturnsConfig", func(t *testing.T) {
 
 		ctx := context.Background()
-		client, _ := NewClient(ctx)
+		client, _ := NewConfigClient()
 
 		// act
 		config, err := client.ReadConfigFromFile(ctx, "./test-config.yaml")

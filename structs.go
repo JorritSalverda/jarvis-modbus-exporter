@@ -1,4 +1,4 @@
-package api
+package main
 
 import (
 	contractsv1 "github.com/JorritSalverda/jarvis-contracts-golang/contracts/v1"

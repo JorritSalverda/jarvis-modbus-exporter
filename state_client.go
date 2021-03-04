@@ -1,4 +1,4 @@
-package state
+package main
 
 import (
 	"context"
@@ -14,29 +14,29 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// Client is the interface for retrieving and storing state
-type Client interface {
+// StateClient is the interface for retrieving and storing state
+//go:generate mockgen -package=main -destination ./state_client_mock.go -source=state_client.go
+type StateClient interface {
 	ReadState(ctx context.Context) (lastMeasurement *contractsv1.Measurement, err error)
 	StoreState(ctx context.Context, measurement contractsv1.Measurement) (err error)
 }
 
-// NewClient returns new bigquery.Client
-func NewClient(ctx context.Context, kubeClientset *kubernetes.Clientset, measurementFilePath, measurementFileConfigMapName string) (Client, error) {
-
-	return &client{
+// NewStateClient returns new StateClient
+func NewStateClient(kubeClientset *kubernetes.Clientset, measurementFilePath, measurementFileConfigMapName string) (StateClient, error) {
+	return &stateClient{
 		kubeClientset:                kubeClientset,
 		measurementFilePath:          measurementFilePath,
 		measurementFileConfigMapName: measurementFileConfigMapName,
 	}, nil
 }
 
-type client struct {
+type stateClient struct {
 	kubeClientset                *kubernetes.Clientset
 	measurementFilePath          string
 	measurementFileConfigMapName string
 }
 
-func (c *client) ReadState(ctx context.Context) (lastMeasurement *contractsv1.Measurement, err error) {
+func (c *stateClient) ReadState(ctx context.Context) (lastMeasurement *contractsv1.Measurement, err error) {
 
 	// check if last measurement file exists in configmap
 	if _, err := os.Stat(c.measurementFilePath); !os.IsNotExist(err) {
@@ -59,7 +59,7 @@ func (c *client) ReadState(ctx context.Context) (lastMeasurement *contractsv1.Me
 	return
 }
 
-func (c *client) StoreState(ctx context.Context, measurement contractsv1.Measurement) (err error) {
+func (c *stateClient) StoreState(ctx context.Context, measurement contractsv1.Measurement) (err error) {
 
 	currentNamespace, err := c.getCurrentNamespace()
 	if err != nil {
@@ -91,7 +91,7 @@ func (c *client) StoreState(ctx context.Context, measurement contractsv1.Measure
 	return nil
 }
 
-func (c *client) getCurrentNamespace() (namespace string, err error) {
+func (c *stateClient) getCurrentNamespace() (namespace string, err error) {
 	ns, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
 		return namespace, fmt.Errorf("Failed reading namespace: %w", err)
