@@ -7,6 +7,7 @@ use chrono::{DateTime,Utc};
 use byteorder::{ByteOrder,BigEndian};
 use conv::*;
 
+#[derive(Copy, Clone)]
 pub enum EntityType {
   Invalid,
   Tariff,
@@ -14,12 +15,14 @@ pub enum EntityType {
   Device,
 }
 
+#[derive(Copy, Clone)]
 pub enum MetricType {
   Invalid,
   Counter,
   Gauge,
 }
 
+#[derive(Copy, Clone)]
 pub enum SampleType {
   Invalid,
   ElectricityConsumption,
@@ -69,6 +72,7 @@ pub struct ConfigSample {
   register_quantity: u16,
 }
 
+#[derive(Copy, Clone)]
 pub enum RegisterType {
   Input,
   Holding,
@@ -104,13 +108,7 @@ impl ModbusClient {
 
 	pub fn get_measurement(&self, config: Config, last_measurement: Option<Measurement>) -> Result<Measurement, Box<dyn Error>> {
 
-    // init modbus tcp settings
-    let mut cfg = tcp::Config::default();
-    cfg.tcp_port = self.config.port;
-    cfg.modbus_uid = self.config.unit_id;
-    cfg.tcp_connect_timeout = Some(Duration::new(20, 0));
-
-    let modbus_client = tcp::Transport::new_with_cfg(&self.config.host, cfg).unwrap();
+    let mut modbus_client = self.init_modbus_client()?;
 
     let mut measurement = Measurement{
       id:  Uuid::new_v4().to_string(),
@@ -121,18 +119,31 @@ impl ModbusClient {
     };
 
     for sample_config in config.sample_configs.iter() {
-      match self.get_sample(&config, sample_config, &modbus_client) {
+      match self.get_sample(sample_config, &mut modbus_client) {
         Ok(sample) => { measurement.samples.push(sample); },
         Err(error) => return Err(error),
       };
     }
 
-    Ok(measurement)
-
-	
+    Ok(measurement)	
   }
 
-	pub fn get_sample(&self, config: &Config, sample_config: &ConfigSample, modbus_client: &modbus::Transport) -> Result<Sample, Box<dyn Error>> {
+  fn init_modbus_cfg(&self) -> modbus::Config {
+    let mut cfg = tcp::Config::default();
+    cfg.tcp_port = self.config.port;
+    cfg.modbus_uid = self.config.unit_id;
+    cfg.tcp_connect_timeout = Some(Duration::new(20, 0));
+
+    cfg
+  }
+
+  fn init_modbus_client(&self) -> std::io::Result<modbus::Transport> {
+    let cfg = self.init_modbus_cfg();
+    
+    tcp::Transport::new_with_cfg(&self.config.host, cfg)
+  }
+
+	pub fn get_sample(&self, sample_config: &ConfigSample, modbus_client: &mut modbus::Transport) -> Result<Sample, Box<dyn Error>> {
     
     let sample_registers = match sample_config.register_type {
       RegisterType::Input => modbus_client.read_input_registers(sample_config.register_address, sample_config.register_quantity),
@@ -149,13 +160,12 @@ impl ModbusClient {
     // init sample from config
     Ok(Sample{
       entity_type: sample_config.entity_type,
-      entity_name: sample_config.entity_name,
+      entity_name: sample_config.entity_name.clone(),
       sample_type: sample_config.sample_type,
-      sample_name: sample_config.sample_name,
+      sample_name: sample_config.sample_name.clone(),
       metric_type: sample_config.metric_type,
-      value: f64::value_from(sample_value[0]).unwrap() * sample_config.value_multiplier
+      value: f64::approx_from(sample_value[0]).unwrap() * sample_config.value_multiplier
     })
-
   }
 }
 
