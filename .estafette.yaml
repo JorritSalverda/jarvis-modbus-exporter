@@ -22,6 +22,7 @@ stages:
       build:
         image: rust:1.51-alpine
         commands:
+        - apk add --upgrade musl-dev
         - cargo test
         - cargo build --release
 
