@@ -15,13 +15,13 @@ pub struct BigqueryClientConfig {
 }
 
 impl BigqueryClientConfig {
-  pub async fn new(project_id: String, dataset: String, table: String, google_application_credentials: String, enable:    bool, init: bool) -> Result<BigqueryClientConfig, Box<dyn Error>> {
+  pub async fn new(project_id: String, dataset: String, table: String, google_application_credentials: String, enable:    bool, init: bool) -> Result<Self, Box<dyn Error>> {
     let client = gcp_bigquery_client::Client::from_service_account_key_file(&google_application_credentials).await;
 
-    Ok(BigqueryClientConfig { google_application_credentials, project_id, dataset, table, enable, init, client })
+    Ok(Self { google_application_credentials, project_id, dataset, table, enable, init, client })
   }
 
-  pub async fn from_env() -> Result<BigqueryClientConfig, Box<dyn Error>> {
+  pub async fn from_env() -> Result<Self, Box<dyn Error>> {
     let google_application_credentials = env::var("GOOGLE_APPLICATION_CREDENTIALS").unwrap_or(String::from("/secrets/keyfile.json"));
     let project_id = env::var("BQ_PROJECT_ID")?;
     let dataset = env::var("BQ_DATASET")?;
@@ -29,7 +29,7 @@ impl BigqueryClientConfig {
     let enable: bool = env::var("BQ_ENABLE").unwrap_or("true".to_string()).parse().unwrap_or(true);
     let init: bool = env::var("BQ_INIT").unwrap_or("true".to_string()).parse().unwrap_or(true);
 
-    BigqueryClientConfig::new(google_application_credentials, project_id, dataset, table, enable, init ).await
+    Self::new(google_application_credentials, project_id, dataset, table, enable, init ).await
   }  
 }
 
@@ -38,8 +38,8 @@ pub struct BigqueryClient {
 }
 
 impl BigqueryClient {
-  pub fn new(config: BigqueryClientConfig) -> BigqueryClient {
-    BigqueryClient { config }
+  pub fn new(config: BigqueryClientConfig) -> Self {
+    Self { config }
   }
 
 	pub fn check_if_dataset_exists(&self, dataset: String) -> Result<bool, Box<dyn Error>> {

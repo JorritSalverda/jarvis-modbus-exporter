@@ -15,8 +15,8 @@ pub struct ExporterServiceConfig {
 }
 
 impl ExporterServiceConfig {
-  pub fn new(config_client:   ConfigClient, bigquery_client: BigqueryClient, state_client:    StateClient, modbus_client:   ModbusClient) -> Result<ExporterServiceConfig,Box<dyn Error>> {
-    Ok(ExporterServiceConfig{ config_client, bigquery_client, state_client, modbus_client})
+  pub fn new(config_client:   ConfigClient, bigquery_client: BigqueryClient, state_client:    StateClient, modbus_client:   ModbusClient) -> Result<Self,Box<dyn Error>> {
+    Ok(Self{ config_client, bigquery_client, state_client, modbus_client})
   }
 }
 
@@ -25,8 +25,8 @@ pub struct ExporterService {
 }
 
 impl ExporterService {
-  pub fn new(config:   ExporterServiceConfig) -> ExporterService {
-    ExporterService{ config }
+  pub fn new(config:   ExporterServiceConfig) -> Self {
+    Self{ config }
   }
 
   pub fn run(&self, bigquery_init: bool, bigquery_dataset: String, bigquery_table: String) -> Result<bool, io::Error> {

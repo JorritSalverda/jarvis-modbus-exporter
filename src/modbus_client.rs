@@ -16,7 +16,7 @@ pub struct ModbusClientConfig {
 }
 
 impl ModbusClientConfig {
-  pub fn new(host: String, port: u16, unit_id: u8) -> Result<ModbusClientConfig, Box<dyn Error>> {
+  pub fn new(host: String, port: u16, unit_id: u8) -> Result<Self, Box<dyn Error>> {
     if host == "" {
       return Err(Box::<dyn Error>::from("Please set the ip address of your modbus device on your local network"));
     }
@@ -24,15 +24,15 @@ impl ModbusClientConfig {
       return Err(Box::<dyn Error>::from("Please set the modbus port of your modbus device on your local network to its default 502, or anywhere between 49152 and 65535 if changed in the installer menu"));
     }
 
-    Ok(ModbusClientConfig { host, port, unit_id })
+    Ok(Self { host, port, unit_id })
   }
 
-  pub fn from_env() -> Result<ModbusClientConfig, Box<dyn Error>> {
+  pub fn from_env() -> Result<Self, Box<dyn Error>> {
     let host = env::var("MODBUS_HOST_IP").unwrap_or("127.0.0.1".to_string());
     let port: u16 = env::var("MODBUS_HOST_PORT").unwrap_or("502".to_string()).parse().unwrap_or(502);
     let unit_id: u8 = env::var("MODBUS_UNIT_ID").unwrap_or("3".to_string()).parse().unwrap_or(3);
 
-    ModbusClientConfig::new(host, port, unit_id)
+    Self::new(host, port, unit_id)
   }  
 }
 
