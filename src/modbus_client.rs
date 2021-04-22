@@ -7,7 +7,7 @@ use uuid::Uuid;
 use chrono::Utc;
 use byteorder::{ByteOrder,BigEndian};
 use conv::*;
-use crate::model::{Config,ConfigSample,Measurement,Sample,RegisterType};
+use crate::model::{Config,ConfigSample,Measurement,Sample,EntityType,SampleType,MetricType,RegisterType};
 
 pub struct ModbusClientConfig {
 	host:   String,
@@ -105,5 +105,44 @@ pub fn get_sample(&self, sample_config: &ConfigSample, modbus_client: &mut modbu
       metric_type: sample_config.metric_type,
       value: f64::approx_from(sample_value[0]).unwrap() * sample_config.value_multiplier
     })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  #[ignore]
+  fn get_measurement_returns_total_power_produced_for_sma_convertor() {
+    let modbus_client = ModbusClient::new(ModbusClientConfig::new("192.168.195.3".to_string(), 502, 3).unwrap());
+
+    let config = Config{
+      location: "My Home".to_string(),
+      sample_configs: vec![ConfigSample{
+        entity_type: EntityType::Device,
+        entity_name: "Sunny TriPower 8.0".to_string(),
+        sample_type: SampleType::ElectricityProduction,
+        sample_name: "Totaal opgewekt".to_string(),
+        metric_type: MetricType::Counter,
+        value_multiplier: 3600f64,
+        register_type: RegisterType::Input,
+        register_address: 30513u16,
+        register_quantity: 4u16,
+      }],
+    };
+
+    let last_measurement : Option<Measurement> = Option::None;
+
+    let measurement = modbus_client.get_measurement(config, last_measurement).unwrap();
+
+    assert_eq!(measurement.location, "My Home".to_string());
+    assert_eq!(measurement.samples.len(), 1);
+    assert_eq!(measurement.samples[0].entity_type, EntityType::Device);
+    assert_eq!(measurement.samples[0].entity_name, "Sunny TriPower 8.0".to_string());
+    assert_eq!(measurement.samples[0].sample_type, SampleType::ElectricityProduction);
+    assert_eq!(measurement.samples[0].sample_name, "Totaal opgewekt".to_string());
+    assert_eq!(measurement.samples[0].metric_type, MetricType::Counter);
+    assert_eq!(measurement.samples[0].value, 3600f64);
   }
 }

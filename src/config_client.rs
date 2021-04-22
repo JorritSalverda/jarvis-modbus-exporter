@@ -42,7 +42,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn it_works() {
+  fn read_config_from_file_returns_deserialized_test_file() {
 
     let config_client = ConfigClient::new(ConfigClientConfig::new("test-config.yaml".to_string()).unwrap());
 
