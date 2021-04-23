@@ -1,3 +1,7 @@
+builder:
+  track: dev
+  type: kubernetes
+
 labels:
   app-group: jarvis
   language: golang
