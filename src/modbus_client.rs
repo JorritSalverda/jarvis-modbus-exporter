@@ -64,6 +64,10 @@ impl ModbusClient {
       };
     }
 
+    // if lastMeasurement != nil {
+    //   measurement.Samples = c.sanitizeSamples(measurement.Samples, lastMeasurement.Samples)
+    // }
+
     Ok(measurement)	
   }
 
@@ -82,7 +86,7 @@ impl ModbusClient {
     tcp::Transport::new_with_cfg(&self.config.host, cfg)
   }
 
-pub fn get_sample(&self, sample_config: &ConfigSample, modbus_client: &mut modbus::Transport) -> Result<Sample, Box<dyn Error>> {
+  fn get_sample(&self, sample_config: &ConfigSample, modbus_client: &mut modbus::Transport) -> Result<Sample, Box<dyn Error>> {
     
     let sample_registers = match sample_config.register_type {
       RegisterType::Input => modbus_client.read_input_registers(sample_config.register_address, sample_config.register_quantity),
@@ -106,6 +110,41 @@ pub fn get_sample(&self, sample_config: &ConfigSample, modbus_client: &mut modbu
       value: f64::approx_from(sample_value[0]).unwrap() * sample_config.value_multiplier
     })
   }
+
+  // func (c *modbusClient) sanitizeSamples(currentSamples, lastSamples []*contractsv1.Sample) (sanitizeSamples []*contractsv1.Sample) {
+
+  //   sanitizeSamples = []*contractsv1.Sample{}
+  //   for _, cs := range currentSamples {
+  //     // check if there's a corresponding sample in lastSamples and see if the difference with it's value isn't too large
+  //     sanitize := false
+  //     for _, ls := range lastSamples {
+  //       if cs.EntityType == ls.EntityType &&
+  //         cs.EntityName == ls.EntityName &&
+  //         cs.SampleType == ls.SampleType &&
+  //         cs.SampleName == ls.SampleName &&
+  //         cs.MetricType == cs.MetricType {
+  //         if cs.MetricType == contractsv1.MetricType_METRIC_TYPE_COUNTER && cs.Value < ls.Value {
+  //           sanitize = true
+  //           log.Warn().Msgf("Value for %v is less than the last sampled value %v, keeping previous value instead", cs, ls.Value)
+  //           sanitizeSamples = append(sanitizeSamples, ls)
+  //         } else if cs.MetricType == contractsv1.MetricType_METRIC_TYPE_COUNTER && cs.Value/ls.Value > 1.1 {
+  //           sanitize = true
+  //           log.Warn().Msgf("Value for %v is more than 10 percent larger than the last sampled value %v, keeping previous value instead", cs, ls.Value)
+  //           sanitizeSamples = append(sanitizeSamples, ls)
+  //         }
+  
+  //         break
+  //       }
+  //     }
+  //     if !sanitize {
+  //       sanitizeSamples = append(sanitizeSamples, cs)
+  //     }
+  //   }
+  
+  //   return
+  // }
+  
+
 }
 
 #[cfg(test)]

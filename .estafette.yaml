@@ -8,31 +8,20 @@ version:
     minor: 1
 
 stages:
-  build-lint-and-package:
-    parallelStages:
-      # build:
-      #   image: golang:1.16-alpine
-      #   env:
-      #     CGO_ENABLED: 0
-      #     GOOS: linux
-      #   commands:
-      #   - go test -short ./...
-      #   - go build -a -installsuffix cgo -ldflags "-X main.appgroup=${ESTAFETTE_LABEL_APP_GROUP} -X main.app=${ESTAFETTE_GIT_NAME} -X main.version=${ESTAFETTE_BUILD_VERSION} -X main.revision=${ESTAFETTE_GIT_REVISION} -X main.branch=${ESTAFETTE_GIT_BRANCH} -X main.buildDate=${ESTAFETTE_BUILD_DATETIME}" -o ./publish/${ESTAFETTE_GIT_NAME} .
+  build:
+    image: rust:1.51-alpine
+    commands:
+    - apk add --upgrade musl-dev
+    - cargo test
+    - cargo build --release
 
-      build:
-        image: rust:1.51-alpine
-        commands:
-        - apk add --upgrade musl-dev
-        - cargo test
-        - cargo build --release
+  lint-helm-chart:
+    image: extensions/helm:stable
+    action: lint
 
-      lint-helm-chart:
-        image: extensions/helm:stable
-        action: lint
-
-      package-helm-chart:
-        image: extensions/helm:stable
-        action: package
+  package-helm-chart:
+    image: extensions/helm:stable
+    action: package
 
   # bake:
   #   image: extensions/docker:stable
