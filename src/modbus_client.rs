@@ -145,4 +145,18 @@ mod tests {
     assert_eq!(measurement.samples[0].metric_type, MetricType::Counter);
     assert_eq!(measurement.samples[0].value, 3600f64);
   }
+
+  #[test]
+  #[ignore]
+  fn test_modbus_lib() {
+
+    let mut cfg = tcp::Config::default();
+    cfg.tcp_port = 502;
+    cfg.modbus_uid = 3;
+    cfg.tcp_connect_timeout = Some(Duration::new(5, 0));
+
+    let mut modbus_client = tcp::Transport::new_with_cfg("192.168.195.3", cfg).unwrap();
+
+    let sample_registers = modbus_client.read_input_registers(30513, 4).unwrap();
+  }
 }
