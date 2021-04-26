@@ -1,6 +1,4 @@
-use std::env;
 use std::error::Error;
-use std::io;
 
 use crate::config_client::ConfigClient;
 use crate::bigquery_client::BigqueryClient;
@@ -29,47 +27,23 @@ impl ExporterService {
     Self{ config }
   }
 
-  pub fn run(&self, bigquery_init: bool, bigquery_dataset: String, bigquery_table: String) -> Result<bool, io::Error> {
+  pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
 
-    // // read config from yaml file
-    // config, err := s.configClient.ReadConfigFromFile(ctx, *configPath)
-    // if err != nil {
-    //   return
-    // }
-
+    let config = self.config.config_client.read_config_from_file()?;
+    
     // log.Info().Interface("config", config).Msgf("Loaded config from %v", *configPath)
 
-    // // init bigquery table if it doesn't exist yet
-    // if bigqueryInit {
-    //   err = s.bigqueryClient.InitBigqueryTable(ctx, bigqueryDataset, bigqueryTable)
-    //   if err != nil {
-    //     return
-    //   }
-    // }
+    self.config.bigquery_client.init_table().await?;
 
-    // lastMeasurement, err := s.stateClient.ReadState(ctx)
-    // if err != nil {
-    //   return
-    // }
+    let last_measurement = self.config.state_client.read_state()?;
 
-    // measurement, err := s.modbusClient.GetMeasurement(ctx, config, lastMeasurement)
-    // if err != nil {
-    //   return
-    // }
+    let measurement = self.config.modbus_client.get_measurement(config, last_measurement)?;
 
-    // err = s.bigqueryClient.InsertMeasurement(ctx, bigqueryDataset, bigqueryTable, measurement)
-    // if err != nil {
-    //   return
-    // }
+    self.config.bigquery_client.insert_measurement(&measurement)?;
 
-    // err = s.stateClient.StoreState(ctx, measurement)
-    // if err != nil {
-    //   return
-    // }
+    self.config.state_client.store_state(&measurement)?;
 
-    // return nil
-
-    Ok(true)
+    Ok(())
   }
 }
 

@@ -45,6 +45,8 @@ pub enum SampleType {
   Time,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
 pub struct Measurement {
 	pub id:             String,
 	pub source:         String,
@@ -53,7 +55,8 @@ pub struct Measurement {
 	pub measured_at_time: DateTime<Utc>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
 pub struct Sample {
 	pub entity_type: EntityType,
 	pub entity_name: String,

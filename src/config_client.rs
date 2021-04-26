@@ -2,7 +2,7 @@ use std::env;
 use std::error::Error;
 use std::fs;
 use serde_yaml;
-use crate::model::{Config,EntityType,SampleType,MetricType,RegisterType};
+use crate::model::Config;
 
 pub struct ConfigClientConfig {
   config_path: String,
@@ -40,6 +40,7 @@ impl ConfigClient {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::model::{EntityType,SampleType,MetricType,RegisterType};
 
   #[test]
   fn read_config_from_file_returns_deserialized_test_file() {

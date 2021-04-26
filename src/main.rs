@@ -6,7 +6,6 @@ mod modbus_client;
 mod state_client;
 
 use std::process;
-use std::env;
 use futures::executor::block_on;
 
 use bigquery_client::{BigqueryClientConfig,BigqueryClient};
@@ -16,7 +15,6 @@ use modbus_client::{ModbusClientConfig,ModbusClient};
 use state_client::{StateClientConfig,StateClient};
 
 fn main() {
-
     let modbus_client_config = ModbusClientConfig::from_env().unwrap_or_else(|err| {
       println!("Failed parsing ModbusClientConfig: {}", err);
       process::exit(1);
@@ -49,5 +47,8 @@ fn main() {
 
     let exporter_service = ExporterService::new(exporter_service_config);
 
-    // exporter_service_config.run()
+    block_on(exporter_service.run()).unwrap_or_else(|err| {
+      println!("Failed running ExporterService: {}", err);
+      process::exit(1);
+    });
 }

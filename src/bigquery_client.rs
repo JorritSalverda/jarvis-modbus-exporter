@@ -1,16 +1,20 @@
 use std::env;
 use std::error::Error;
+use std::{thread, time};
 
 use crate::model::{Measurement};
+use gcp_bigquery_client::model::table::Table;
+use gcp_bigquery_client::model::table_field_schema::TableFieldSchema;
+use gcp_bigquery_client::model::table_schema::TableSchema;
+use gcp_bigquery_client::model::time_partitioning::TimePartitioning;
+use gcp_bigquery_client::model::table_data_insert_all_request::TableDataInsertAllRequest;
 
 pub struct BigqueryClientConfig {
-  google_application_credentials: String,
 	project_id: String,
   dataset: String,
   table: String,
 	enable:    bool,
   init: bool,
-
 	client:    gcp_bigquery_client::Client,
 }
 
@@ -18,7 +22,7 @@ impl BigqueryClientConfig {
   pub async fn new(project_id: String, dataset: String, table: String, google_application_credentials: String, enable:    bool, init: bool) -> Result<Self, Box<dyn Error>> {
     let client = gcp_bigquery_client::Client::from_service_account_key_file(&google_application_credentials).await;
 
-    Ok(Self { google_application_credentials, project_id, dataset, table, enable, init, client })
+    Ok(Self { project_id, dataset, table, enable, init, client })
   }
 
   pub async fn from_env() -> Result<Self, Box<dyn Error>> {
@@ -42,142 +46,130 @@ impl BigqueryClient {
     Self { config }
   }
 
-	pub fn check_if_dataset_exists(&self, dataset: String) -> Result<bool, Box<dyn Error>> {
+	pub async fn check_if_table_exists(&self) -> bool {
     if !self.config.enable{
-      return Ok(false)
+      return false
     }
 
-    // ds := c.client.Dataset(dataset)
-
-    // md, err := ds.Metadata(ctx)
-
-    // log.Error().Err(err).Msgf("Error retrieving metadata for dataset %v", dataset)
-
-    // return md != nil    
-
-    Ok(true)
+    return match &self.config.client.table().get(&self.config.project_id, &self.config.dataset, &self.config.table, None).await {
+      Ok(_) => true,
+      Err(_) => false,
+    };
   }
 
-	pub fn check_if_table_exists(&self, dataset: String, table: String) -> Result<bool, Box<dyn Error>> {
+	pub async fn create_table(&self, wait_ready: bool) -> Result<(), Box<dyn Error>> {
     if !self.config.enable{
-      return Ok(false)
+      return Ok(())
     }
 
-    // tbl := c.client.Dataset(dataset).Table(table)
+    let dataset = &self.config.client.dataset().get(&self.config.project_id, &self.config.dataset).await?;
 
-  	// md, _ := tbl.Metadata(ctx)
+    dataset
+    .create_table(
+        &self.config.client,
+        Table::from_dataset(
+          &dataset,
+          &self.config.table,
+          TableSchema::new(vec![
+            TableFieldSchema::string("ID"),
+            TableFieldSchema::string("Source"),
+            TableFieldSchema::string("Location"),
+            TableFieldSchema::record(
+              "Samples",
+              vec![
+                  TableFieldSchema::string("EntityType"),
+                  TableFieldSchema::string("EntityName"),
+                  TableFieldSchema::string("SampleType"),
+                  TableFieldSchema::string("SampleName"),
+                  TableFieldSchema::string("MetricType"),
+                  TableFieldSchema::float("Value"),
+              ],
+            ),
+            TableFieldSchema::timestamp("MeasuredAtTime")
+          ]),
+        )
+        .time_partitioning(
+            TimePartitioning::per_day()
+                .field("MeasuredAtTime"),
+        ),
+    )
+    .await?;
 
-    Ok(true)
-  }
+    if wait_ready {
+      loop {
+        if self.check_if_table_exists().await {
+          break
+        }
 
-	pub fn create_table(&self, dataset: String, table: String, partition_field: String, wait_ready: bool) -> Result<bool, Box<dyn Error>> {
-    if !self.config.enable{
-      return Ok(false)
+        thread::sleep(time::Duration::from_secs(1));
+      }
     }
 
-    // tbl := c.client.Dataset(dataset).Table(table)
-
-    // // infer the schema of the type
-    // schema, err := googlebigquery.InferSchema(typeForSchema)
-    // if err != nil {
-    //   return err
-    // }
-
-    // tableMetadata := &googlebigquery.TableMetadata{
-    //   Schema: schema,
-    // }
-
-    // // if partitionField is set use it for time partitioning
-    // if partitionField != "" {
-    //   tableMetadata.TimePartitioning = &googlebigquery.TimePartitioning{
-    //     Field: partitionField,
-    //   }
-    // }
-
-    // // create the table
-    // err = tbl.Create(ctx, tableMetadata)
-    // if err != nil {
-    //   return err
-    // }
-
-    // if waitReady {
-    //   for {
-    //     if c.CheckIfTableExists(ctx, dataset, table) {
-    //       break
-    //     }
-    //     time.Sleep(time.Second)
-    //   }
-    // }
-
-    Ok(true)
+    Ok(())
   }
 
-	pub fn update_table_schema(&self, dataset: String, table: String) -> Result<bool, Box<dyn Error>> {
+	pub async fn update_table_schema(&self) -> Result<(), Box<dyn Error>> {
     if !self.config.enable{
-      return Ok(false)
+      return Ok(())
     }
 
-    // tbl := c.client.Dataset(dataset).Table(table)
-
-    // // infer the schema of the type
-    // schema, err := googlebigquery.InferSchema(typeForSchema)
-    // if err != nil {
-    //   return err
-    // }
-
-    // meta, err := tbl.Metadata(ctx)
-    // if err != nil {
-    //   return err
-    // }
-
-    // update := googlebigquery.TableMetadataToUpdate{
-    //   Schema: schema,
-    // }
-    // if _, err := tbl.Update(ctx, update, meta.ETag); err != nil {
-    //   return err
-    // }
-
-    Ok(true)
-  }
-
-	pub fn insert_measurement(&self, dataset: String, table: String, measurement: Measurement) -> Result<bool, Box<dyn Error>> {
     if !self.config.enable{
-      return Ok(false)
+      return Ok(())
     }
 
-    // tbl := c.client.Dataset(dataset).Table(table)
+    let dataset = &self.config.client.dataset().get(&self.config.project_id, &self.config.dataset).await?;
 
-    // u := tbl.Uploader()
+    self.config.client.table().update(&self.config.project_id, &self.config.dataset, &self.config.table, Table::from_dataset(
+      &dataset,
+      &self.config.table,
+      TableSchema::new(vec![
+        TableFieldSchema::string("ID"),
+        TableFieldSchema::string("Source"),
+        TableFieldSchema::string("Location"),
+        TableFieldSchema::record(
+          "Samples",
+          vec![
+              TableFieldSchema::string("EntityType"),
+              TableFieldSchema::string("EntityName"),
+              TableFieldSchema::string("SampleType"),
+              TableFieldSchema::string("SampleName"),
+              TableFieldSchema::string("MetricType"),
+              TableFieldSchema::float("Value"),
+          ],
+        ),
+        TableFieldSchema::timestamp("MeasuredAtTime")
+      ]),
+    )).await?;
 
-    // if err := u.Put(context.Background(), measurement); err != nil {
-    //   return err
-    // }
-
-    Ok(true)
+    Ok(())
   }
 
-	pub fn init_table(&self, dataset: String, table: String) -> Result<bool, Box<dyn Error>> {
+	pub fn insert_measurement(&self, measurement: &Measurement) -> Result<(), Box<dyn Error>> {
     if !self.config.enable{
-      return Ok(false)
+      return Ok(())
+    }
+
+    let mut insert_request = TableDataInsertAllRequest::new();
+    insert_request.add_row(
+        None,
+        measurement,
+    )?;
+
+    Ok(())
+  }
+
+	pub async fn init_table(&self) -> Result<(), Box<dyn Error>> {
+    if !self.config.enable || !self.config.init{
+      return Ok(())
     }
 
     // log.Debug().Msgf("Checking if table %v.%v.%v exists...", c.projectID, dataset, table)
-    // tableExist := c.CheckIfTableExists(ctx, dataset, table)
+    if !self.check_if_table_exists().await {
+      self.create_table(true).await?
+    } else {
+      self.update_table_schema().await?
+    }
 
-    // if !tableExist {
-    //   log.Debug().Msgf("Creating table %v.%v.%v...", c.projectID, dataset, table)
-    //   err := c.CreateTable(ctx, dataset, table, contractsv1.Measurement{}, "MeasuredAtTime", true)
-    //   if err != nil {
-    //     return fmt.Errorf("Failed creating bigquery table: %w", err)
-    //   }
-    // } else {
-    //   log.Debug().Msgf("Trying to update table %v.%v.%v schema...", c.projectID, dataset, table)
-    //   err := c.UpdateTableSchema(ctx, dataset, table, contractsv1.Measurement{})
-    //   if err != nil {
-    //     return fmt.Errorf("Failed updating bigquery table schema: %w", err)
-    //   }
-    // }
-
-    Ok(true)
+    Ok(())
   }
 }

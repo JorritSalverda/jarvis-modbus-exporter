@@ -1,5 +1,7 @@
 use std::env;
 use std::error::Error;
+use std::fs;
+use crate::model::{Measurement};
 
 pub struct StateClientConfig {
 	// kubeClientset                *kubernetes.Clientset
@@ -30,30 +32,18 @@ impl StateClient {
     StateClient { config }
   }
 
-  // func (c *stateClient) ReadState(ctx context.Context) (lastMeasurement *contractsv1.Measurement, err error) {
+  pub fn read_state(&self) -> Result<Option<Measurement>, Box<dyn std::error::Error>> {
 
-  //   // check if last measurement file exists in configmap
-  //   if _, err := os.Stat(c.measurementFilePath); !os.IsNotExist(err) {
-  //     log.Info().Msgf("File %v exists, reading contents...", c.measurementFilePath)
+    let state_file_contents = fs::read_to_string(&self.config.measurement_file_path)?;
+    let last_measurement: Option<Measurement> = match serde_json::from_str(&state_file_contents){
+      Ok(lm) => Some(lm),
+      Err(_) => None,
+    };
+
+    Ok(last_measurement)
+  }
   
-  //     // read state file
-  //     data, err := ioutil.ReadFile(c.measurementFilePath)
-  //     if err != nil {
-  //       return lastMeasurement, fmt.Errorf("Failed reading file from path %v: %w", c.measurementFilePath, err)
-  //     }
-  
-  //     log.Info().Msgf("Unmarshalling file %v contents...", c.measurementFilePath)
-  
-  //     // unmarshal state file
-  //     if err := json.Unmarshal(data, &lastMeasurement); err != nil {
-  //       return lastMeasurement, fmt.Errorf("Failed unmarshalling last measurement file: %w", err)
-  //     }
-  //   }
-  
-  //   return
-  // }
-  
-  // func (c *stateClient) StoreState(ctx context.Context, measurement contractsv1.Measurement) (err error) {
+  pub fn store_state(&self, measurement: &Measurement) ->  Result<(), Box<dyn std::error::Error>> {
   
   //   currentNamespace, err := c.getCurrentNamespace()
   //   if err != nil {
@@ -83,7 +73,8 @@ impl StateClient {
   //   log.Info().Msgf("Stored measurement in configmap %v...", c.measurementFileConfigMapName)
   
   //   return nil
-  // }
+    Ok(())
+  }
   
   // func (c *stateClient) getCurrentNamespace() (namespace string, err error) {
   //   ns, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
