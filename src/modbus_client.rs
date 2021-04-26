@@ -7,7 +7,7 @@ use uuid::Uuid;
 use chrono::Utc;
 use byteorder::{ByteOrder,BigEndian};
 use conv::*;
-use crate::model::{Config,ConfigSample,Measurement,Sample,EntityType,SampleType,MetricType,RegisterType};
+use crate::model::{Config,ConfigSample,Measurement,Sample,MetricType,RegisterType};
 
 pub struct ModbusClientConfig {
 	host:   String,
@@ -64,9 +64,12 @@ impl ModbusClient {
       };
     }
 
-    // if lastMeasurement != nil {
-    //   measurement.Samples = c.sanitizeSamples(measurement.Samples, lastMeasurement.Samples)
-    // }
+    match last_measurement {
+      Some(lm) => {
+        measurement.samples = self.sanitize_samples(measurement.samples, lm.samples)
+      }
+      None => {}
+    }
 
     Ok(measurement)	
   }
@@ -111,45 +114,46 @@ impl ModbusClient {
     })
   }
 
-  // func (c *modbusClient) sanitizeSamples(currentSamples, lastSamples []*contractsv1.Sample) (sanitizeSamples []*contractsv1.Sample) {
+  fn sanitize_samples(&self, current_samples: Vec<Sample>, last_samples: Vec<Sample>) -> Vec<Sample> {
 
-  //   sanitizeSamples = []*contractsv1.Sample{}
-  //   for _, cs := range currentSamples {
-  //     // check if there's a corresponding sample in lastSamples and see if the difference with it's value isn't too large
-  //     sanitize := false
-  //     for _, ls := range lastSamples {
-  //       if cs.EntityType == ls.EntityType &&
-  //         cs.EntityName == ls.EntityName &&
-  //         cs.SampleType == ls.SampleType &&
-  //         cs.SampleName == ls.SampleName &&
-  //         cs.MetricType == cs.MetricType {
-  //         if cs.MetricType == contractsv1.MetricType_METRIC_TYPE_COUNTER && cs.Value < ls.Value {
-  //           sanitize = true
-  //           log.Warn().Msgf("Value for %v is less than the last sampled value %v, keeping previous value instead", cs, ls.Value)
-  //           sanitizeSamples = append(sanitizeSamples, ls)
-  //         } else if cs.MetricType == contractsv1.MetricType_METRIC_TYPE_COUNTER && cs.Value/ls.Value > 1.1 {
-  //           sanitize = true
-  //           log.Warn().Msgf("Value for %v is more than 10 percent larger than the last sampled value %v, keeping previous value instead", cs, ls.Value)
-  //           sanitizeSamples = append(sanitizeSamples, ls)
-  //         }
+    let mut sanitized_samples : Vec<Sample> = Vec::new();
   
-  //         break
-  //       }
-  //     }
-  //     if !sanitize {
-  //       sanitizeSamples = append(sanitizeSamples, cs)
-  //     }
-  //   }
-  
-  //   return
-  // }
-  
+    for current_sample in current_samples.into_iter() {
+      // check if there's a corresponding sample in lastSamples and see if the difference with it's value isn't too large
+      let mut sanitize = false;
+      for last_sample in last_samples.iter() {
+        if current_sample.entity_type == last_sample.entity_type &&
+          current_sample.entity_name == last_sample.entity_name &&
+          current_sample.sample_type == last_sample.sample_type &&
+          current_sample.sample_name == last_sample.sample_name &&
+          current_sample.metric_type == last_sample.metric_type {
+          if current_sample.metric_type == MetricType::Counter && current_sample.value < last_sample.value {
+            sanitize = true;
+            // log.Warn().Msgf("Value for %v is less than the last sampled value %v, keeping previous value instead", cs, ls.Value)
+            sanitized_samples.push(last_sample.clone());
+          } else if current_sample.metric_type == MetricType::Counter && current_sample.value / last_sample.value > 1.1 {
+            sanitize = true;
+            // log.Warn().Msgf("Value for %v is more than 10 percent larger than the last sampled value %v, keeping previous value instead", cs, ls.Value)
+            sanitized_samples.push(last_sample.clone());
+          }
 
+          break;
+        }
+      }
+      
+      if !sanitize {
+        sanitized_samples.push(current_sample);
+      }
+    }
+  
+    sanitized_samples
+  }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::model::{Config,ConfigSample,Measurement,EntityType,SampleType,MetricType,RegisterType};
 
   #[test]
   #[ignore]
@@ -182,7 +186,7 @@ mod tests {
     assert_eq!(measurement.samples[0].sample_type, SampleType::ElectricityProduction);
     assert_eq!(measurement.samples[0].sample_name, "Totaal opgewekt".to_string());
     assert_eq!(measurement.samples[0].metric_type, MetricType::Counter);
-    assert_eq!(measurement.samples[0].value, 3600f64);
+    assert_eq!(measurement.samples[0].value, 9253360800.0f64);
   }
 
   #[test]

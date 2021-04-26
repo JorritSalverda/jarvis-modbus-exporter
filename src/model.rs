@@ -53,6 +53,7 @@ pub struct Measurement {
 	pub measured_at_time: DateTime<Utc>,
 }
 
+#[derive(Clone)]
 pub struct Sample {
 	pub entity_type: EntityType,
 	pub entity_name: String,
