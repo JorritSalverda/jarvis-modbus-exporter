@@ -41,7 +41,7 @@ impl ExporterService {
 
     self.config.bigquery_client.insert_measurement(&measurement)?;
 
-    self.config.state_client.store_state(&measurement)?;
+    self.config.state_client.store_state(&measurement).await?;
 
     Ok(())
   }

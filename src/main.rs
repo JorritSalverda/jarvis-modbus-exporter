@@ -20,7 +20,7 @@ fn main() {
       process::exit(1);
     });
 
-    let state_client_config = StateClientConfig::from_env().unwrap_or_else(|err| {
+    let state_client_config = block_on(StateClientConfig::from_env()).unwrap_or_else(|err| {
       println!("Failed parsing StateClientConfig: {}", err);
       process::exit(1);
     });
