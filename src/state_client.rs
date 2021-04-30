@@ -75,6 +75,11 @@ impl StateClient {
             Err(_) => None,
         };
 
+        println!(
+            "Read previous measurement from state file at {}",
+            &self.config.measurement_file_path
+        );
+
         Ok(last_measurement)
     }
 
@@ -144,6 +149,11 @@ impl StateClient {
 
         // update configmap to have measurement available when the application runs the next time and for other applications
         self.update_state_configmap(&config_map).await?;
+
+        println!(
+            "Stored last measurement in configmap {}",
+            &self.config.measurement_file_configmap_name
+        );
 
         Ok(())
     }

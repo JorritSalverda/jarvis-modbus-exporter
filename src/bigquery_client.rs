@@ -1,6 +1,5 @@
 use std::env;
 use std::error::Error;
-use std::fs;
 use std::{thread, time};
 
 use crate::model::Measurement;
@@ -33,21 +32,6 @@ impl BigqueryClientConfig {
             project_id, dataset, table, google_application_credentials, enable, init
         );
 
-        match fs::read_to_string(&google_application_credentials) {
-            Ok(sa) => {
-                println!(
-                    "Found service account keyfile at {}: {}",
-                    &google_application_credentials, sa
-                )
-            }
-            Err(e) => {
-                println!(
-                    "Could not find service account keyfile at {}: {}",
-                    &google_application_credentials, e
-                )
-            }
-        }
-
         let client = gcp_bigquery_client::Client::from_service_account_key_file(
             &google_application_credentials,
         )
@@ -79,10 +63,10 @@ impl BigqueryClientConfig {
             .unwrap_or(true);
 
         Self::new(
-            google_application_credentials,
             project_id,
             dataset,
             table,
+            google_application_credentials,
             enable,
             init,
         )
@@ -171,6 +155,8 @@ impl BigqueryClient {
             }
         }
 
+        println!("Created bigquery table {}", &self.config.table);
+
         Ok(())
     }
 
@@ -221,6 +207,8 @@ impl BigqueryClient {
             )
             .await?;
 
+        println!("Updated schema for bigquery table {}", &self.config.table);
+
         Ok(())
     }
 
@@ -232,6 +220,11 @@ impl BigqueryClient {
         let mut insert_request = TableDataInsertAllRequest::new();
         insert_request.add_row(None, measurement)?;
 
+        println!(
+            "Inserted measurement into bigquery table {}",
+            &self.config.table
+        );
+
         Ok(())
     }
 
@@ -240,7 +233,6 @@ impl BigqueryClient {
             return Ok(());
         }
 
-        // log.Debug().Msgf("Checking if table %v.%v.%v exists...", c.projectID, dataset, table)
         if !self.check_if_table_exists().await {
             self.create_table(true).await?
         } else {

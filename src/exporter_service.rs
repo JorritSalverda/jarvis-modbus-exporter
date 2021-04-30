@@ -40,8 +40,6 @@ impl ExporterService {
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         let config = self.config.config_client.read_config_from_file()?;
 
-        // log.Info().Interface("config", config).Msgf("Loaded config from %v", *configPath)
-
         self.config.bigquery_client.init_table().await?;
 
         let last_measurement = self.config.state_client.read_state()?;

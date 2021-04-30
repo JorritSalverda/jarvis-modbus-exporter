@@ -93,6 +93,11 @@ impl ModbusClient {
             None => {}
         }
 
+        println!(
+            "Retrieved measurement via modbus from device {}",
+            &self.config.host
+        );
+
         Ok(measurement)
     }
 
