@@ -1,3 +1,8 @@
+# builder:
+#   medium: memory
+#   track: dev
+#   type: kubernetes
+
 labels:
   app-group: jarvis
   language: golang
@@ -5,20 +10,11 @@ labels:
 version:
   semver:
     major: 0
-    minor: 1
+    minor: 2
 
 stages:
-  build-lint-and-package:
+  build-and-lint:
     parallelStages:
-      build:
-        image: golang:1.16-alpine
-        env:
-          CGO_ENABLED: 0
-          GOOS: linux
-        commands:
-        - go test -short ./...
-        - go build -a -installsuffix cgo -ldflags "-X main.appgroup=${ESTAFETTE_LABEL_APP_GROUP} -X main.app=${ESTAFETTE_GIT_NAME} -X main.version=${ESTAFETTE_BUILD_VERSION} -X main.revision=${ESTAFETTE_GIT_REVISION} -X main.branch=${ESTAFETTE_GIT_BRANCH} -X main.buildDate=${ESTAFETTE_BUILD_DATETIME}" -o ./publish/${ESTAFETTE_GIT_NAME} .
-
       lint-helm-chart:
         image: extensions/helm:stable
         action: lint
@@ -27,24 +23,11 @@ stages:
         image: extensions/helm:stable
         action: package
 
-  bake:
-    image: extensions/docker:stable
-    action: build
-    inline: |
-      FROM scratch
-
-      LABEL maintainer="JorritSalverda" \
-            description="The ${ESTAFETTE_GIT_NAME} component is an application to read information from a modbus device via ethernet and insert metrics into BigQuery"
-
-      COPY ${ESTAFETTE_GIT_NAME} /
-      COPY ca-certificates.crt /etc/ssl/certs/
-
-      ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
-    repositories:
-    - jsalverda
-    path: ./publish
-    copy:
-    - /etc/ssl/certs/ca-certificates.crt
+      bake:
+        image: extensions/docker:stable
+        action: build
+        repositories:
+        - jsalverda
 
   push-to-docker-hub:
     image: extensions/docker:stable
