@@ -17,7 +17,10 @@ pub struct ModbusClientConfig {
 
 impl ModbusClientConfig {
     pub fn new(host: String, port: u16, unit_id: u8) -> Result<Self, Box<dyn Error>> {
-        println!("ModbusClientConfig::new({}, {}, {})", host, port, unit_id);
+        println!(
+            "ModbusClientConfig::new(host: {}, port: {}, unit_id: {})",
+            host, port, unit_id
+        );
 
         if host == "" {
             return Err(Box::<dyn Error>::from(

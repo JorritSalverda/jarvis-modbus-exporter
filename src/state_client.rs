@@ -26,7 +26,7 @@ impl StateClientConfig {
         current_namespace: String,
     ) -> Result<Self, Box<dyn Error>> {
         println!(
-            "StateClientConfig::new({}, {}, {})",
+            "StateClientConfig::new(measurement_file_path: {}, measurement_file_configmap_name: {}, current_namespace: {})",
             measurement_file_path, measurement_file_configmap_name, current_namespace
         );
         Ok(Self {

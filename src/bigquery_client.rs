@@ -1,5 +1,6 @@
 use std::env;
 use std::error::Error;
+use std::fs;
 use std::{thread, time};
 
 use crate::model::Measurement;
@@ -28,9 +29,24 @@ impl BigqueryClientConfig {
         init: bool,
     ) -> Result<Self, Box<dyn Error>> {
         println!(
-            "BigqueryClientConfig::new({}, {}, {}, {}, {}, {})",
+            "BigqueryClientConfig::new(project_id: {}, dataset: {}, table: {}, google_application_credentials: {}, enable: {}, init: {})",
             project_id, dataset, table, google_application_credentials, enable, init
         );
+
+        match fs::read_to_string(&google_application_credentials) {
+            Ok(sa) => {
+                println!(
+                    "Found service account keyfile at {}: {}",
+                    &google_application_credentials, sa
+                )
+            }
+            Err(e) => {
+                println!(
+                    "Could not find service account keyfile at {}: {}",
+                    &google_application_credentials, e
+                )
+            }
+        }
 
         let client = gcp_bigquery_client::Client::from_service_account_key_file(
             &google_application_credentials,
