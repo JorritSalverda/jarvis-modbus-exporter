@@ -27,6 +27,11 @@ impl BigqueryClientConfig {
         enable: bool,
         init: bool,
     ) -> Result<Self, Box<dyn Error>> {
+        println!(
+            "BigqueryClientConfig::new({}, {}, {}, {}, {}, {})",
+            project_id, dataset, table, google_application_credentials, enable, init
+        );
+
         let client = gcp_bigquery_client::Client::from_service_account_key_file(
             &google_application_credentials,
         )

@@ -25,7 +25,8 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config_client_config = ConfigClientConfig::from_env()?;
     let config_client = ConfigClient::new(config_client_config);
 
-    let exporter_service_config = ExporterServiceConfig::new(config_client, bigquery_client, state_client, modbus_client)?;
+    let exporter_service_config =
+        ExporterServiceConfig::new(config_client, bigquery_client, state_client, modbus_client)?;
     let exporter_service = ExporterService::new(exporter_service_config);
 
     exporter_service.run().await?;

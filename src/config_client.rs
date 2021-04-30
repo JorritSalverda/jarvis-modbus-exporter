@@ -10,6 +10,7 @@ pub struct ConfigClientConfig {
 
 impl ConfigClientConfig {
     pub fn new(config_path: String) -> Result<Self, Box<dyn Error>> {
+        println!("ConfigClientConfig::new({})", config_path);
         Ok(Self { config_path })
     }
 

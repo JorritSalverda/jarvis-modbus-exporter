@@ -25,6 +25,10 @@ impl StateClientConfig {
         measurement_file_configmap_name: String,
         current_namespace: String,
     ) -> Result<Self, Box<dyn Error>> {
+        println!(
+            "StateClientConfig::new({}, {}, {})",
+            measurement_file_path, measurement_file_configmap_name, current_namespace
+        );
         Ok(Self {
             kube_client,
             measurement_file_path,
@@ -41,7 +45,8 @@ impl StateClientConfig {
         let measurement_file_configmap_name = env::var("MEASUREMENT_FILE_CONFIG_MAP_NAME")
             .unwrap_or("jarvis-modbus-exporter".to_string());
 
-        let current_namespace = fs::read_to_string("/var/run/secrets/kubernetes.io/serviceaccount/namespace")?;
+        let current_namespace =
+            fs::read_to_string("/var/run/secrets/kubernetes.io/serviceaccount/namespace")?;
 
         Self::new(
             kube_client,
@@ -73,11 +78,11 @@ impl StateClient {
         Ok(last_measurement)
     }
 
-    async fn get_state_configmap(
-      &self,
-    ) -> Result<ConfigMap, Box<dyn std::error::Error>> {
-        let configmaps_api: Api<ConfigMap> =
-            Api::namespaced(self.config.kube_client.clone(), &self.config.current_namespace);
+    async fn get_state_configmap(&self) -> Result<ConfigMap, Box<dyn std::error::Error>> {
+        let configmaps_api: Api<ConfigMap> = Api::namespaced(
+            self.config.kube_client.clone(),
+            &self.config.current_namespace,
+        );
 
         let config_map = configmaps_api
             .get(&self.config.measurement_file_configmap_name)
@@ -87,33 +92,32 @@ impl StateClient {
     }
 
     async fn update_state_configmap(
-      &self,
-      config_map: &ConfigMap,
+        &self,
+        config_map: &ConfigMap,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let configmaps_api: Api<ConfigMap> = Api::namespaced(
+            self.config.kube_client.clone(),
+            &self.config.current_namespace,
+        );
 
-      let configmaps_api: Api<ConfigMap> =
-      Api::namespaced(self.config.kube_client.clone(), &self.config.current_namespace);
+        configmaps_api
+            .replace(
+                &self.config.measurement_file_configmap_name,
+                &PostParams::default(),
+                &config_map,
+            )
+            .await?;
 
-      configmaps_api
-      .replace(
-          &self.config.measurement_file_configmap_name,
-          &PostParams::default(),
-          &config_map,
-      )
-      .await?;
-
-
-      Ok(())
+        Ok(())
     }
 
     pub async fn store_state(
         &self,
         measurement: &Measurement,
     ) -> Result<(), Box<dyn std::error::Error>> {
-
         // retrieve configmap
         let mut config_map = self.get_state_configmap().await?;
- 
+
         // marshal state to json
         let json_data = match serde_json::to_string(measurement) {
             Ok(js) => js,
@@ -131,7 +135,7 @@ impl StateClient {
         };
 
         // update data in configmap
-        let mut data : std::collections::BTreeMap<String, String> = match config_map.data {
+        let mut data: std::collections::BTreeMap<String, String> = match config_map.data {
             Some(d) => d,
             None => BTreeMap::new(),
         };
@@ -145,7 +149,6 @@ impl StateClient {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -153,32 +156,32 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn get_last_measurement() {
-      let kube_client: kube::Client = match Client::try_default().await {
-        Ok(c) => c,
-        Err(e) => panic!("Getting kube_client errored: {}", e),
-      };
+        let kube_client: kube::Client = match Client::try_default().await {
+            Ok(c) => c,
+            Err(e) => panic!("Getting kube_client errored: {}", e),
+        };
 
-      let measurement_file_path = "/configs/last-measurement.json".to_string();
-      let measurement_file_configmap_name = "jarvis-modbus-exporter-sunny".to_string();
-      let current_namespace = "jarvis".to_string();
+        let measurement_file_path = "/configs/last-measurement.json".to_string();
+        let measurement_file_configmap_name = "jarvis-modbus-exporter-sunny".to_string();
+        let current_namespace = "jarvis".to_string();
 
-      let state_client = StateClient::new(
+        let state_client = StateClient::new(
             StateClientConfig::new(
-              kube_client,
-              measurement_file_path,
-              measurement_file_configmap_name,
-              current_namespace,
-            ).unwrap(),
+                kube_client,
+                measurement_file_path,
+                measurement_file_configmap_name,
+                current_namespace,
+            )
+            .unwrap(),
         );
 
         let config_map = state_client.get_state_configmap().await;
 
         match config_map {
-          Ok(cm) => {
-            assert_eq!(cm.data.unwrap().len(), 10);
-          },
-          Err(e) => panic!("get_state_configmap errored: {}", e),
+            Ok(cm) => {
+                assert_eq!(cm.data.unwrap().len(), 10);
+            }
+            Err(e) => panic!("get_state_configmap errored: {}", e),
         }
     }
 }
-
