@@ -1,52 +1,65 @@
 use std::error::Error;
 
-use crate::config_client::ConfigClient;
 use crate::bigquery_client::BigqueryClient;
-use crate::state_client::StateClient;
+use crate::config_client::ConfigClient;
 use crate::modbus_client::ModbusClient;
+use crate::state_client::StateClient;
 
 pub struct ExporterServiceConfig {
-	config_client:   ConfigClient,
-	bigquery_client: BigqueryClient,
-	state_client:    StateClient,
-	modbus_client:   ModbusClient,
+    config_client: ConfigClient,
+    bigquery_client: BigqueryClient,
+    state_client: StateClient,
+    modbus_client: ModbusClient,
 }
 
 impl ExporterServiceConfig {
-  pub fn new(config_client:   ConfigClient, bigquery_client: BigqueryClient, state_client:    StateClient, modbus_client:   ModbusClient) -> Result<Self,Box<dyn Error>> {
-    Ok(Self{ config_client, bigquery_client, state_client, modbus_client})
-  }
+    pub fn new(
+        config_client: ConfigClient,
+        bigquery_client: BigqueryClient,
+        state_client: StateClient,
+        modbus_client: ModbusClient,
+    ) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            config_client,
+            bigquery_client,
+            state_client,
+            modbus_client,
+        })
+    }
 }
 
 pub struct ExporterService {
-	config:   ExporterServiceConfig,
+    config: ExporterServiceConfig,
 }
 
 impl ExporterService {
-  pub fn new(config:   ExporterServiceConfig) -> Self {
-    Self{ config }
-  }
+    pub fn new(config: ExporterServiceConfig) -> Self {
+        Self { config }
+    }
 
-  pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let config = self.config.config_client.read_config_from_file()?;
 
-    let config = self.config.config_client.read_config_from_file()?;
-    
-    // log.Info().Interface("config", config).Msgf("Loaded config from %v", *configPath)
+        // log.Info().Interface("config", config).Msgf("Loaded config from %v", *configPath)
 
-    self.config.bigquery_client.init_table().await?;
+        self.config.bigquery_client.init_table().await?;
 
-    let last_measurement = self.config.state_client.read_state()?;
+        let last_measurement = self.config.state_client.read_state()?;
 
-    let measurement = self.config.modbus_client.get_measurement(config, last_measurement)?;
+        let measurement = self
+            .config
+            .modbus_client
+            .get_measurement(config, last_measurement)?;
 
-    self.config.bigquery_client.insert_measurement(&measurement)?;
+        self.config
+            .bigquery_client
+            .insert_measurement(&measurement)?;
 
-    self.config.state_client.store_state(&measurement).await?;
+        self.config.state_client.store_state(&measurement).await?;
 
-    Ok(())
-  }
+        Ok(())
+    }
 }
-
 
 // func TestRun(t *testing.T) {
 // 	t.Run("ReadsConfigFromFile", func(t *testing.T) {
