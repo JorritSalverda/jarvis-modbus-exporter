@@ -68,12 +68,16 @@ impl StateClient {
     }
 
     pub fn read_state(&self) -> Result<Option<Measurement>, Box<dyn std::error::Error>> {
-        let state_file_contents = fs::read_to_string(&self.config.measurement_file_path)?;
+        let state_file_contents = match fs::read_to_string(&self.config.measurement_file_path)
+        {
+          Ok(c) => c,
+          Err(_) => return Ok(Option::None),
+        };
 
         let last_measurement: Option<Measurement> = match serde_yaml::from_str(&state_file_contents)
         {
             Ok(lm) => Some(lm),
-            Err(_) => None,
+            Err(_) => return Ok(Option::None),
         };
 
         println!(
