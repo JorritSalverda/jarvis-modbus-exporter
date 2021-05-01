@@ -41,7 +41,7 @@ impl StateClientConfig {
         let kube_client: kube::Client = Client::try_default().await?;
 
         let measurement_file_path = env::var("MEASUREMENT_FILE_PATH")
-            .unwrap_or("/configs/last-measurement.json".to_string());
+            .unwrap_or("/configs/last-measurement.yaml".to_string());
         let measurement_file_configmap_name = env::var("MEASUREMENT_FILE_CONFIG_MAP_NAME")
             .unwrap_or("jarvis-modbus-exporter".to_string());
 
@@ -69,7 +69,8 @@ impl StateClient {
 
     pub fn read_state(&self) -> Result<Option<Measurement>, Box<dyn std::error::Error>> {
         let state_file_contents = fs::read_to_string(&self.config.measurement_file_path)?;
-        let last_measurement: Option<Measurement> = match serde_json::from_str(&state_file_contents)
+
+        let last_measurement: Option<Measurement> = match serde_yaml::from_str(&state_file_contents)
         {
             Ok(lm) => Some(lm),
             Err(_) => None,
@@ -123,10 +124,10 @@ impl StateClient {
         // retrieve configmap
         let mut config_map = self.get_state_configmap().await?;
 
-        // marshal state to json
-        let json_data = match serde_json::to_string(measurement) {
-            Ok(js) => js,
-            Err(e) => return Err(Box::new(e)),
+        // marshal state to yaml
+        let yaml_data = match serde_yaml::to_string(measurement) {
+          Ok(yd) => yd,
+          Err(e) => return Err(Box::new(e)),
         };
 
         // extract filename from config file path
@@ -144,7 +145,7 @@ impl StateClient {
             Some(d) => d,
             None => BTreeMap::new(),
         };
-        data.insert(measurement_file_name, json_data);
+        data.insert(measurement_file_name, yaml_data);
         config_map.data = Some(data);
 
         // update configmap to have measurement available when the application runs the next time and for other applications
@@ -162,6 +163,50 @@ impl StateClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::{EntityType,MetricType,SampleType};
+    use chrono::DateTime;
+
+    #[tokio::test]
+    #[ignore]
+    async fn read_measurement_from_file_returns_deserialized_test_file() {
+      let kube_client: kube::Client = match Client::try_default().await {
+        Ok(c) => c,
+        Err(e) => panic!("Getting kube_client errored: {}", e),
+      };
+
+      let measurement_file_path = "test-measurement.yaml".to_string();
+      let measurement_file_configmap_name = "jarvis-modbus-exporter-sunny".to_string();
+      let current_namespace = "jarvis".to_string();
+
+      let state_client = StateClient::new(
+          StateClientConfig::new(
+              kube_client,
+              measurement_file_path,
+              measurement_file_configmap_name,
+              current_namespace,
+          )
+          .unwrap(),
+      );
+
+
+      let last_measurement = state_client.read_state().unwrap();
+      match last_measurement {
+        Some(lm) => {
+          assert_eq!(lm.id, "cc6e17bb-fd60-4dde-acc3-0cda7d752acc".to_string());
+          assert_eq!(lm.source, "jarvis-modbus-exporter".to_string());
+          assert_eq!(lm.location, "My Home".to_string());
+          assert_eq!(lm.samples.len(), 1);
+          assert_eq!(lm.samples[0].entity_type, EntityType::Device);
+          assert_eq!(lm.samples[0].entity_name, "Sunny TriPower 8.0".to_string());
+          assert_eq!(lm.samples[0].sample_type, SampleType::ElectricityProduction);
+          assert_eq!(lm.samples[0].sample_name, "Total production".to_string());
+          assert_eq!(lm.samples[0].metric_type, MetricType::Counter);
+          assert_eq!(lm.samples[0].value,  9695872800.0f64);
+          assert_eq!(lm.measured_at_time, DateTime::parse_from_rfc3339("2021-05-01T05:45:03.043614293Z").unwrap());
+        },
+        None => panic!("read_state returned no measurement"),
+      }
+    }
 
     #[tokio::test]
     #[ignore]
@@ -171,7 +216,7 @@ mod tests {
             Err(e) => panic!("Getting kube_client errored: {}", e),
         };
 
-        let measurement_file_path = "/configs/last-measurement.json".to_string();
+        let measurement_file_path = "/configs/last-measurement.yaml".to_string();
         let measurement_file_configmap_name = "jarvis-modbus-exporter-sunny".to_string();
         let current_namespace = "jarvis".to_string();
 
