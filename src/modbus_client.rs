@@ -1,7 +1,8 @@
-use crate::model::{Config, ConfigSample, Measurement, MetricType, RegisterType, Sample};
+use crate::model::{Config, ConfigSample, RegisterType};
 use byteorder::{BigEndian, ByteOrder};
 use chrono::Utc;
 use conv::*;
+use jarvis_lib::{Measurement, MetricType, Sample};
 use modbus::tcp;
 use modbus::Client;
 use std::env;
@@ -196,9 +197,8 @@ impl ModbusClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{
-        Config, ConfigSample, EntityType, Measurement, MetricType, RegisterType, SampleType,
-    };
+    use crate::model::{Config, ConfigSample, RegisterType};
+    use jarvis_lib::{EntityType, Measurement, MetricType, SampleType};
 
     #[test]
     #[ignore]

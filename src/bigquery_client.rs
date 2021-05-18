@@ -2,12 +2,12 @@ use std::env;
 use std::error::Error;
 use std::{thread, time};
 
-use crate::model::Measurement;
 use gcp_bigquery_client::model::table::Table;
 use gcp_bigquery_client::model::table_data_insert_all_request::TableDataInsertAllRequest;
 use gcp_bigquery_client::model::table_field_schema::TableFieldSchema;
 use gcp_bigquery_client::model::table_schema::TableSchema;
 use gcp_bigquery_client::model::time_partitioning::TimePartitioning;
+use jarvis_lib::Measurement;
 
 pub struct BigqueryClientConfig {
     project_id: String,
@@ -212,7 +212,10 @@ impl BigqueryClient {
         Ok(())
     }
 
-    pub async fn insert_measurement(&self, measurement: &Measurement) -> Result<(), Box<dyn Error>> {
+    pub async fn insert_measurement(
+        &self,
+        measurement: &Measurement,
+    ) -> Result<(), Box<dyn Error>> {
         if !self.config.enable {
             return Ok(());
         }
@@ -222,14 +225,18 @@ impl BigqueryClient {
 
         self.config
             .client
-          .tabledata()
-          .insert_all(&self.config.project_id, &self.config.dataset, &self.config.table, insert_request)
-          .await?;
+            .tabledata()
+            .insert_all(
+                &self.config.project_id,
+                &self.config.dataset,
+                &self.config.table,
+                insert_request,
+            )
+            .await?;
 
         println!(
             "Inserted measurement {:#?} into bigquery table {}",
-            &measurement,
-            &self.config.table
+            &measurement, &self.config.table
         );
 
         Ok(())
