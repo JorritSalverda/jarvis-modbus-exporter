@@ -16,7 +16,7 @@ spec:
       parallelism: 1
       backoffLimit: 0
       activeDeadlineSeconds: 240
-      ttlSecondsAfterFinished: 100
+      ttlSecondsAfterFinished: {{ .Values.cronjob.ttlSecondsAfterFinished }}
       template:
         metadata:
           {{- with .Values.podAnnotations }}
