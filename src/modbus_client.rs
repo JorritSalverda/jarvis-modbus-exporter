@@ -1,3 +1,4 @@
+use crate::measurement_client::MeasurementClient;
 use crate::model::{Config, ConfigSample, RegisterType};
 use byteorder::{BigEndian, ByteOrder};
 use chrono::Utc;
@@ -58,12 +59,8 @@ pub struct ModbusClient {
     config: ModbusClientConfig,
 }
 
-impl ModbusClient {
-    pub fn new(config: ModbusClientConfig) -> ModbusClient {
-        ModbusClient { config }
-    }
-
-    pub fn get_measurement(
+impl MeasurementClient<Config> for ModbusClient {
+    fn get_measurement(
         &self,
         config: Config,
         last_measurement: Option<Measurement>,
@@ -100,6 +97,12 @@ impl ModbusClient {
         );
 
         Ok(measurement)
+    }
+}
+
+impl ModbusClient {
+    pub fn new(config: ModbusClientConfig) -> ModbusClient {
+        ModbusClient { config }
     }
 
     fn init_modbus_cfg(&self) -> modbus::Config {

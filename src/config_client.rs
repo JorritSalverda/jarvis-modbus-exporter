@@ -1,4 +1,5 @@
 use crate::model::Config;
+use serde::de::DeserializeOwned;
 use serde_yaml;
 use std::env;
 use std::error::Error;
@@ -30,9 +31,12 @@ impl ConfigClient {
         Self { config }
     }
 
-    pub fn read_config_from_file(&self) -> Result<Config, Box<dyn Error>> {
+    pub fn read_config_from_file<T>(&self) -> Result<T, Box<dyn Error>>
+    where
+        T: DeserializeOwned,
+    {
         let config_file_contents = fs::read_to_string(&self.config.config_path)?;
-        let config: Config = serde_yaml::from_str(&config_file_contents)?;
+        let config: T = serde_yaml::from_str(&config_file_contents)?;
 
         println!("Loaded config from {}", &self.config.config_path);
 
@@ -51,7 +55,7 @@ mod tests {
         let config_client =
             ConfigClient::new(ConfigClientConfig::new("test-config.yaml".to_string()).unwrap());
 
-        let config = config_client.read_config_from_file().unwrap();
+        let config: Config = config_client.read_config_from_file().unwrap();
 
         assert_eq!(config.location, "My Home".to_string());
         assert_eq!(config.sample_configs.len(), 1);

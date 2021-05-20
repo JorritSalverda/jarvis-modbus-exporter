@@ -2,43 +2,47 @@ use std::error::Error;
 
 use crate::bigquery_client::BigqueryClient;
 use crate::config_client::ConfigClient;
-use crate::modbus_client::ModbusClient;
+use crate::measurement_client::MeasurementClient;
 use crate::state_client::StateClient;
+use serde::de::DeserializeOwned;
 
-pub struct ExporterServiceConfig {
+pub struct ExporterServiceConfig<T: ?Sized> {
     config_client: ConfigClient,
     bigquery_client: BigqueryClient,
     state_client: StateClient,
-    modbus_client: ModbusClient,
+    measurement_client: Box<dyn MeasurementClient<T>>,
 }
 
-impl ExporterServiceConfig {
+impl<T> ExporterServiceConfig<T> {
     pub fn new(
         config_client: ConfigClient,
         bigquery_client: BigqueryClient,
         state_client: StateClient,
-        modbus_client: ModbusClient,
+        measurement_client: Box<dyn MeasurementClient<T>>,
     ) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             config_client,
             bigquery_client,
             state_client,
-            modbus_client,
+            measurement_client,
         })
     }
 }
 
-pub struct ExporterService {
-    config: ExporterServiceConfig,
+pub struct ExporterService<T> {
+    config: ExporterServiceConfig<T>,
 }
 
-impl ExporterService {
-    pub fn new(config: ExporterServiceConfig) -> Self {
+impl<T> ExporterService<T> {
+    pub fn new(config: ExporterServiceConfig<T>) -> Self {
         Self { config }
     }
 
-    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let config = self.config.config_client.read_config_from_file()?;
+    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>>
+    where
+        T: DeserializeOwned,
+    {
+        let config: T = self.config.config_client.read_config_from_file()?;
 
         self.config.bigquery_client.init_table().await?;
 
@@ -46,7 +50,7 @@ impl ExporterService {
 
         let measurement = self
             .config
-            .modbus_client
+            .measurement_client
             .get_measurement(config, last_measurement)?;
 
         self.config
