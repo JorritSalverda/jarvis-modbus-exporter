@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends musl-tools
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo install cargo-chef --version 0.1.20
 COPY --from=planner /app/recipe.json recipe.json
+COPY --from=jsalverda/jarvis-lib-builder:0.1.16 /app/target target
+COPY --from=jsalverda/jarvis-lib-builder:0.1.16 /usr/local/cargo /usr/local/cargo
 RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
 
 FROM rust:1.52 as builder
