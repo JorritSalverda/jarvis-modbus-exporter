@@ -1,8 +1,8 @@
-use jarvis_lib::measurement_client::MeasurementClient;
 use crate::model::{Config, ConfigSample, RegisterType};
 use byteorder::{BigEndian, ByteOrder};
 use chrono::Utc;
 use conv::*;
+use jarvis_lib::measurement_client::MeasurementClient;
 use jarvis_lib::model::{Measurement, MetricType, Sample};
 use modbus::tcp;
 use modbus::Client;

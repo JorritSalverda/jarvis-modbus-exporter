@@ -1,5 +1,5 @@
-use jarvis_lib::model::{EntityType, MetricType, SampleType};
 use jarvis_lib::config_client::SetDefaults;
+use jarvis_lib::model::{EntityType, MetricType, SampleType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -10,7 +10,7 @@ pub struct Config {
 }
 
 impl SetDefaults for Config {
-  fn set_defaults(&mut self) {}
+    fn set_defaults(&mut self) {}
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -38,13 +38,12 @@ pub enum RegisterType {
     Holding,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::model::RegisterType;
+    use jarvis_lib::config_client::{ConfigClient, ConfigClientConfig};
     use jarvis_lib::model::{EntityType, MetricType, SampleType};
-    use jarvis_lib::config_client::{ConfigClientConfig,ConfigClient};
 
     #[test]
     fn read_config_from_file_returns_deserialized_test_file() {
