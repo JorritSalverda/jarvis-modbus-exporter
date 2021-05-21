@@ -1,16 +1,11 @@
-mod bigquery_client;
-mod config_client;
-mod exporter_service;
-mod measurement_client;
 mod modbus_client;
 mod model;
-mod state_client;
 
-use bigquery_client::{BigqueryClient, BigqueryClientConfig};
-use config_client::{ConfigClient, ConfigClientConfig};
-use exporter_service::{ExporterService, ExporterServiceConfig};
+use jarvis_lib::bigquery_client::{BigqueryClient, BigqueryClientConfig};
+use jarvis_lib::config_client::{ConfigClient, ConfigClientConfig};
+use jarvis_lib::exporter_service::{ExporterService, ExporterServiceConfig};
+use jarvis_lib::state_client::{StateClient, StateClientConfig};
 use modbus_client::{ModbusClient, ModbusClientConfig};
-use state_client::{StateClient, StateClientConfig};
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
