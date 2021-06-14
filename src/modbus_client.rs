@@ -84,6 +84,11 @@ impl MeasurementClient<Config> for ModbusClient {
             };
         }
 
+        match modbus_client.close() {
+          Ok(_) => {},
+          Err(e) => { eprintln!("Error closing modbus connection: {}", e) },
+        }
+
         match last_measurement {
             Some(lm) => {
                 measurement.samples = self.sanitize_samples(measurement.samples, lm.samples)
