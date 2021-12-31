@@ -1,13 +1,24 @@
-FROM rust:1.52 as builder
+FROM rust:1.57 as chef
+ENV CARGO_TERM_COLOR=always
 WORKDIR /app
+RUN cargo install cargo-chef
 RUN apt-get update && apt-get install -y --no-install-recommends musl-tools
 RUN rustup target add x86_64-unknown-linux-musl
+RUN rustup component add clippy
+
+FROM chef as planner
 COPY . .
-# add following 2 lines after initial build to speed up next builds
-COPY --from=jsalverda/jarvis-modbus-exporter:dlc-builder /app/target target
-COPY --from=jsalverda/jarvis-modbus-exporter:dlc-builder /usr/local/cargo /usr/local/cargo
-RUN cargo test --release --target x86_64-unknown-linux-musl
-RUN cargo build --release --target x86_64-unknown-linux-musl
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef as builder
+COPY --from=planner /app/recipe.json recipe.json
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
+# Build application
+COPY . .
+RUN cargo build --verbose --release --target x86_64-unknown-linux-musl
+RUN cargo clippy --release --target x86_64-unknown-linux-musl --no-deps -- --deny "warnings"
+RUN cargo test --verbose --release --target x86_64-unknown-linux-musl
 
 FROM scratch AS runtime
 USER 1000
