@@ -24,7 +24,7 @@ impl ModbusClientConfig {
             host, port, unit_id
         );
 
-        if host == "" {
+        if host.is_empty() {
             return Err(Box::<dyn Error>::from(
                 "Please set the ip address of your modbus device on your local network",
             ));
@@ -41,13 +41,13 @@ impl ModbusClientConfig {
     }
 
     pub fn from_env() -> Result<Self, Box<dyn Error>> {
-        let host = env::var("MODBUS_HOST_IP").unwrap_or("127.0.0.1".to_string());
+        let host = env::var("MODBUS_HOST_IP").unwrap_or_else(|_| "127.0.0.1".to_string());
         let port: u16 = env::var("MODBUS_HOST_PORT")
-            .unwrap_or("502".to_string())
+            .unwrap_or_else(|_| "502".to_string())
             .parse()
             .unwrap_or(502);
         let unit_id: u8 = env::var("MODBUS_UNIT_ID")
-            .unwrap_or("3".to_string())
+            .unwrap_or_else(|_| "3".to_string())
             .parse()
             .unwrap_or(3);
 
@@ -89,11 +89,8 @@ impl MeasurementClient<Config> for ModbusClient {
           Err(e) => { eprintln!("Error closing modbus connection: {}", e) },
         }
 
-        match last_measurement {
-            Some(lm) => {
-                measurement.samples = self.sanitize_samples(measurement.samples, lm.samples)
-            }
-            None => {}
+        if let Some(lm) = last_measurement {
+            measurement.samples = self.sanitize_samples(measurement.samples, lm.samples)
         }
 
         println!(
@@ -111,12 +108,7 @@ impl ModbusClient {
     }
 
     fn init_modbus_cfg(&self) -> modbus::Config {
-        let mut cfg = tcp::Config::default();
-        cfg.tcp_port = self.config.port;
-        cfg.modbus_uid = self.config.unit_id;
-        cfg.tcp_connect_timeout = Some(Duration::new(20, 0));
-
-        cfg
+        modbus::Config { tcp_port: self.config.port, modbus_uid: self.config.unit_id, tcp_connect_timeout: Some(Duration::new(20, 0)), ..Default::default() }
     }
 
     fn init_modbus_client(&self) -> std::io::Result<modbus::Transport> {
@@ -176,16 +168,10 @@ impl ModbusClient {
                     && current_sample.metric_type == last_sample.metric_type
                 {
                     if current_sample.metric_type == MetricType::Counter
-                        && current_sample.value < last_sample.value
+                        && (current_sample.value < last_sample.value
+                        || current_sample.value / last_sample.value > 1.1)
                     {
                         sanitize = true;
-                        // log.Warn().Msgf("Value for %v is less than the last sampled value %v, keeping previous value instead", cs, ls.Value)
-                        sanitized_samples.push(last_sample.clone());
-                    } else if current_sample.metric_type == MetricType::Counter
-                        && current_sample.value / last_sample.value > 1.1
-                    {
-                        sanitize = true;
-                        // log.Warn().Msgf("Value for %v is more than 10 percent larger than the last sampled value %v, keeping previous value instead", cs, ls.Value)
                         sanitized_samples.push(last_sample.clone());
                     }
 
