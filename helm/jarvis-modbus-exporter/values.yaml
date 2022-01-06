@@ -13,11 +13,8 @@ config:
   modbusHostIP: 127.0.0.1
   modbusHostPort: 502
   modbusUnitID: 3
-  bqEnable: false
-  bqInit: true
-  bqProjectID: gcp-project-id
-  bqDataset: jarvis
-  bqTable: jarvis_measurements
+  natsHost: jarvis-nats
+  natsSubject: jarvis-measurements
   configYaml: |
     location: My Home
     sampleConfigs:
@@ -30,9 +27,6 @@ config:
       registerType: input
       registerAddress: 30513
       registerQuantity: 4
-
-secret:
-  gcpServiceAccountKeyfile: '{}'
 
 logFormat: json
 

@@ -8,11 +8,8 @@ data:
   modbus-host-ip: {{ .Values.config.modbusHostIP | quote }}
   modbus-host-port: {{ .Values.config.modbusHostPort | quote }}
   modbus-unit-id: {{ .Values.config.modbusUnitID | quote }}
-  bq-enable: {{ .Values.config.bqEnable | quote }}
-  bq-init: {{ .Values.config.bqInit | quote }}
-  bq-project-id: {{ .Values.config.bqProjectID | quote }}
-  bq-dataset: {{ .Values.config.bqDataset | quote }}
-  bq-table: {{ .Values.config.bqTable | quote }}
+  nats-host:  {{ .Values.config.natsHost | quote }}
+  nats-subject:  {{ .Values.config.natsSubject | quote }}
   config.yaml: |
     {{- with .Values.config.configYaml }}
     {{- tpl . $ | nindent 4 }}
