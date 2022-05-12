@@ -4,6 +4,7 @@ use chrono::Utc;
 use conv::*;
 use jarvis_lib::measurement_client::MeasurementClient;
 use jarvis_lib::model::{Measurement, MetricType, Sample};
+use log::{debug, info};
 use modbus::tcp;
 use modbus::Client;
 use std::env;
@@ -19,7 +20,7 @@ pub struct ModbusClientConfig {
 
 impl ModbusClientConfig {
     pub fn new(host: String, port: u16, unit_id: u8) -> Result<Self, Box<dyn Error>> {
-        println!(
+        debug!(
             "ModbusClientConfig::new(host: {}, port: {}, unit_id: {})",
             host, port, unit_id
         );
@@ -85,15 +86,17 @@ impl MeasurementClient<Config> for ModbusClient {
         }
 
         match modbus_client.close() {
-          Ok(_) => {},
-          Err(e) => { eprintln!("Error closing modbus connection: {}", e) },
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Error closing modbus connection: {}", e)
+            }
         }
 
         if let Some(lm) = last_measurement {
             measurement.samples = self.sanitize_samples(measurement.samples, lm.samples)
         }
 
-        println!(
+        info!(
             "Retrieved measurement via modbus from device {}",
             &self.config.host
         );
@@ -108,7 +111,12 @@ impl ModbusClient {
     }
 
     fn init_modbus_cfg(&self) -> modbus::Config {
-        modbus::Config { tcp_port: self.config.port, modbus_uid: self.config.unit_id, tcp_connect_timeout: Some(Duration::new(20, 0)), ..Default::default() }
+        modbus::Config {
+            tcp_port: self.config.port,
+            modbus_uid: self.config.unit_id,
+            tcp_connect_timeout: Some(Duration::new(20, 0)),
+            ..Default::default()
+        }
     }
 
     fn init_modbus_client(&self) -> std::io::Result<modbus::Transport> {
@@ -169,7 +177,7 @@ impl ModbusClient {
                 {
                     if current_sample.metric_type == MetricType::Counter
                         && (current_sample.value < last_sample.value
-                        || current_sample.value / last_sample.value > 1.1)
+                            || current_sample.value / last_sample.value > 1.1)
                     {
                         sanitize = true;
                         sanitized_samples.push(last_sample.clone());

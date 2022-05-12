@@ -1,14 +1,16 @@
 mod modbus_client;
 mod model;
 
-use jarvis_lib::nats_client::{NatsClient, NatsClientConfig};
 use jarvis_lib::config_client::{ConfigClient, ConfigClientConfig};
 use jarvis_lib::exporter_service::{ExporterService, ExporterServiceConfig};
+use jarvis_lib::nats_client::{NatsClient, NatsClientConfig};
 use jarvis_lib::state_client::{StateClient, StateClientConfig};
 use modbus_client::{ModbusClient, ModbusClientConfig};
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    json_env_logger::init();
+
     let modbus_client_config = ModbusClientConfig::from_env()?;
     let modbus_client = ModbusClient::new(modbus_client_config);
 
@@ -27,7 +29,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         state_client,
         Box::new(modbus_client),
     )?;
-    let exporter_service = ExporterService::new(exporter_service_config);
+    let mut exporter_service = ExporterService::new(exporter_service_config);
 
     exporter_service.run().await?;
 
