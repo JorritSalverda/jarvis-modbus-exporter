@@ -28,7 +28,7 @@ config:
       registerAddress: 30513
       registerQuantity: 4
 
-logFormat: json
+logLevel: debug
 
 image:
   repository: jsalverda/jarvis-modbus-exporter
