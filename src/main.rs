@@ -9,7 +9,10 @@ use modbus_client::{ModbusClient, ModbusClientConfig};
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    json_env_logger::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let modbus_client_config = ModbusClientConfig::from_env()?;
     let modbus_client = ModbusClient::new(modbus_client_config);

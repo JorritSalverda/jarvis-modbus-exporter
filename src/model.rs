@@ -30,7 +30,7 @@ pub struct ConfigSample {
     pub register_quantity: u16,
 }
 
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Debug)]
 pub enum RegisterType {
     #[serde(rename = "input")]
     Input,

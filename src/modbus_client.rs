@@ -4,12 +4,12 @@ use chrono::Utc;
 use conv::*;
 use jarvis_lib::measurement_client::MeasurementClient;
 use jarvis_lib::model::{Measurement, MetricType, Sample};
-use log::{debug, info};
 use modbus::tcp;
 use modbus::Client;
 use std::env;
 use std::error::Error;
 use std::time::Duration;
+use tracing::{debug, info};
 use uuid::Uuid;
 
 pub struct ModbusClientConfig {
@@ -61,11 +61,11 @@ pub struct ModbusClient {
 }
 
 impl MeasurementClient<Config> for ModbusClient {
-    fn get_measurement(
+    fn get_measurements(
         &self,
         config: Config,
-        last_measurement: Option<Measurement>,
-    ) -> Result<Measurement, Box<dyn Error>> {
+        last_measurements: Option<Vec<Measurement>>,
+    ) -> Result<Vec<Measurement>, Box<dyn Error>> {
         let mut modbus_client = self.init_modbus_client()?;
 
         let mut measurement = Measurement {
@@ -92,8 +92,11 @@ impl MeasurementClient<Config> for ModbusClient {
             }
         }
 
-        if let Some(lm) = last_measurement {
-            measurement.samples = self.sanitize_samples(measurement.samples, lm.samples)
+        if let Some(lm) = last_measurements {
+            if !lm.is_empty() {
+                measurement.samples =
+                    self.sanitize_samples(measurement.samples, &lm[lm.len() - 1].samples)
+            }
         }
 
         info!(
@@ -101,7 +104,7 @@ impl MeasurementClient<Config> for ModbusClient {
             &self.config.host
         );
 
-        Ok(measurement)
+        Ok(vec![measurement])
     }
 }
 
@@ -161,7 +164,7 @@ impl ModbusClient {
     fn sanitize_samples(
         &self,
         current_samples: Vec<Sample>,
-        last_samples: Vec<Sample>,
+        last_samples: &[Sample],
     ) -> Vec<Sample> {
         let mut sanitized_samples: Vec<Sample> = Vec::new();
 
@@ -200,7 +203,7 @@ impl ModbusClient {
 mod tests {
     use super::*;
     use crate::model::{Config, ConfigSample, RegisterType};
-    use jarvis_lib::model::{EntityType, Measurement, MetricType, SampleType};
+    use jarvis_lib::model::{EntityType, MetricType, SampleType};
 
     #[test]
     #[ignore]
@@ -224,28 +227,25 @@ mod tests {
             }],
         };
 
-        let last_measurement: Option<Measurement> = Option::None;
+        let measurements = modbus_client.get_measurements(config, None).unwrap();
 
-        let measurement = modbus_client
-            .get_measurement(config, last_measurement)
-            .unwrap();
-
-        assert_eq!(measurement.location, "My Home".to_string());
-        assert_eq!(measurement.samples.len(), 1);
-        assert_eq!(measurement.samples[0].entity_type, EntityType::Device);
+        assert_eq!(measurements.len(), 1);
+        assert_eq!(measurements[0].location, "My Home".to_string());
+        assert_eq!(measurements[0].samples.len(), 1);
+        assert_eq!(measurements[0].samples[0].entity_type, EntityType::Device);
         assert_eq!(
-            measurement.samples[0].entity_name,
+            measurements[0].samples[0].entity_name,
             "Sunny TriPower 8.0".to_string()
         );
         assert_eq!(
-            measurement.samples[0].sample_type,
+            measurements[0].samples[0].sample_type,
             SampleType::ElectricityProduction
         );
         assert_eq!(
-            measurement.samples[0].sample_name,
+            measurements[0].samples[0].sample_name,
             "Totaal opgewekt".to_string()
         );
-        assert_eq!(measurement.samples[0].metric_type, MetricType::Counter);
-        assert!(measurement.samples[0].value > 9253360800.0f64);
+        assert_eq!(measurements[0].samples[0].metric_type, MetricType::Counter);
+        assert!(measurements[0].samples[0].value > 9253360800.0f64);
     }
 }
