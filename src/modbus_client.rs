@@ -69,7 +69,7 @@ impl MeasurementClient<Config> for ModbusClient {
         let mut modbus_client = self.init_modbus_client()?;
 
         let mut measurement = Measurement {
-            id: Uuid::new_v4().to_string(),
+            id: Uuid::now_v7().to_string(),
             source: String::from("jarvis-modbus-exporter"),
             location: config.location.clone(),
             samples: Vec::new(),
