@@ -17,8 +17,4 @@ modbus = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.35", features = ["rt", "rt-multi-thread", "macros"] }
 uuid = { version = "1.6", features = ["v7","js"] }
-jarvis-lib = { git = "https://github.com/JorritSalverda/jarvis-lib", tag = "v0.1.66" }
-kube = "0.87"
-openssl = { version = "0.10", features = ["vendored"] }
-
-
+jarvis-lib = { git = "https://github.com/JorritSalverda/jarvis-lib", tag = "v0.1.67" }

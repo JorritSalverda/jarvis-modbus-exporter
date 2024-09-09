@@ -28,6 +28,8 @@ pub struct ConfigSample {
     pub register_type: RegisterType,
     pub register_address: u16,
     pub register_quantity: u16,
+    #[serde(default)]
+    pub signed: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Debug)]

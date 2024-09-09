@@ -144,11 +144,71 @@ impl ModbusClient {
             ),
         }?;
 
-        let mut sample_bytes: Vec<u8> = vec![0; sample_registers.len() * 2];
-        BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+        // U16 Unsigned integer of 16-bit
+        // U32 Unsigned integer of 32-bit
+        // U64 Unsigned integer of 64-bit
+        // S16 Signed integer of 16-bit
+        // S32 Signed integer of 32-bit
 
-        let mut sample_value: Vec<u64> = vec![0; sample_registers.len() / 4];
-        BigEndian::read_u64_into(&sample_bytes, &mut sample_value);
+        // pub register_signed: bool,
+
+        let value: f64 = if sample_registers.len() == 4 && sample_config.signed {
+            // i64
+            let mut sample_bytes: Vec<u8> = vec![0; 8];
+            BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+
+            let mut sample_value: Vec<i64> = vec![0; 1];
+            BigEndian::read_i64_into(&sample_bytes, &mut sample_value);
+
+            f64::approx_from(sample_value[0]).unwrap()
+        } else if sample_registers.len() == 4 {
+            // u64
+            let mut sample_bytes: Vec<u8> = vec![0; 8];
+            BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+
+            let mut sample_value: Vec<u64> = vec![0; 1];
+            BigEndian::read_u64_into(&sample_bytes, &mut sample_value);
+
+            f64::approx_from(sample_value[0]).unwrap()
+        } else if sample_registers.len() == 2 && sample_config.signed {
+            // i32
+            let mut sample_bytes: Vec<u8> = vec![0; 4];
+            BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+
+            let mut sample_value: Vec<i32> = vec![0; 1];
+            BigEndian::read_i32_into(&sample_bytes, &mut sample_value);
+
+            f64::from(sample_value[0])
+        } else if sample_registers.len() == 2 {
+            // u32
+            let mut sample_bytes: Vec<u8> = vec![0; 4];
+            BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+
+            let mut sample_value: Vec<u32> = vec![0; 1];
+            BigEndian::read_u32_into(&sample_bytes, &mut sample_value);
+
+            f64::from(sample_value[0])
+        } else if sample_registers.len() == 1 && sample_config.signed {
+            // i16
+            let mut sample_bytes: Vec<u8> = vec![0; 2];
+            BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+
+            let mut sample_value: Vec<i16> = vec![0; 1];
+            BigEndian::read_i16_into(&sample_bytes, &mut sample_value);
+
+            f64::from(sample_value[0])
+        } else if sample_registers.len() == 1 {
+            // u16
+            let mut sample_bytes: Vec<u8> = vec![0; 2];
+            BigEndian::write_u16_into(&sample_registers, &mut sample_bytes);
+
+            let mut sample_value: Vec<u16> = vec![0; 1];
+            BigEndian::read_u16_into(&sample_bytes, &mut sample_value);
+
+            f64::from(sample_value[0])
+        } else {
+            0.
+        };
 
         // init sample from config
         Ok(Sample {
@@ -157,7 +217,7 @@ impl ModbusClient {
             sample_type: sample_config.sample_type,
             sample_name: sample_config.sample_name.clone(),
             metric_type: sample_config.metric_type,
-            value: f64::approx_from(sample_value[0]).unwrap() * sample_config.value_multiplier,
+            value: value * sample_config.value_multiplier,
         })
     }
 
@@ -209,25 +269,28 @@ mod tests {
     #[ignore]
     fn get_measurement_returns_total_power_produced_for_sma_convertor() {
         let modbus_client = ModbusClient::new(
-            ModbusClientConfig::new("192.168.195.3".to_string(), 502, 3).unwrap(),
+            ModbusClientConfig::new("192.168.195.171".to_string(), 502, 1).unwrap(),
         );
 
         let config = Config {
             location: "My Home".to_string(),
             sample_configs: vec![ConfigSample {
                 entity_type: EntityType::Device,
-                entity_name: "Sunny TriPower 8.0".to_string(),
+                entity_name: "Sigenergy 12.0 TP".to_string(),
                 sample_type: SampleType::ElectricityProduction,
-                sample_name: "Totaal opgewekt".to_string(),
-                metric_type: MetricType::Counter,
-                value_multiplier: 3600f64,
-                register_type: RegisterType::Input,
-                register_address: 30513u16,
-                register_quantity: 4u16,
+                sample_name: "Vermogen".to_string(),
+                metric_type: MetricType::Gauge,
+                value_multiplier: 1f64,
+                register_type: RegisterType::Holding,
+                register_address: 31035,
+                register_quantity: 2,
+                signed: true,
             }],
         };
 
-        let measurements = modbus_client.get_measurements(config, None).unwrap();
+        let measurements = modbus_client
+            .get_measurements(config, None)
+            .expect("Failed retrieving measurements");
 
         assert_eq!(measurements.len(), 1);
         assert_eq!(measurements[0].location, "My Home".to_string());
@@ -235,7 +298,7 @@ mod tests {
         assert_eq!(measurements[0].samples[0].entity_type, EntityType::Device);
         assert_eq!(
             measurements[0].samples[0].entity_name,
-            "Sunny TriPower 8.0".to_string()
+            "Sigenergy 12.0 TP".to_string()
         );
         assert_eq!(
             measurements[0].samples[0].sample_type,
@@ -243,9 +306,9 @@ mod tests {
         );
         assert_eq!(
             measurements[0].samples[0].sample_name,
-            "Totaal opgewekt".to_string()
+            "Vermogen".to_string()
         );
-        assert_eq!(measurements[0].samples[0].metric_type, MetricType::Counter);
-        assert!(measurements[0].samples[0].value > 9253360800.0f64);
+        assert_eq!(measurements[0].samples[0].metric_type, MetricType::Gauge);
+        assert!(measurements[0].samples[0].value > 10.0f64);
     }
 }
